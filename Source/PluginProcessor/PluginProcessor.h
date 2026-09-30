@@ -86,6 +86,9 @@ public:
     int getMidiMappingFor (int paramIndex) const;   // CC number or -1
     std::function<void()> onMidiLearnChanged;
 
+    float getEditorScale() const noexcept { return editorScale; }
+    void setEditorScale (float s) { editorScale = juce::jlimit (0.75f, 1.5f, s); }
+
     const juce::String& getCurrentPresetName() const noexcept { return currentPresetName; }
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
 
@@ -121,6 +124,8 @@ private:
     int learnTarget = -1;
 
     double internalPpq = 0.0;
+    float cpuLoad = 0.0f;
+    float editorScale = 1.0f;
     juce::String currentPresetName { "Init" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeddPEAudioProcessor)

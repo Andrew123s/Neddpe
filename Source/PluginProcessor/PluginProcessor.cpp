@@ -97,9 +97,17 @@ TransportInfo NeddPEAudioProcessor::readTransport (int numSamples)
 
 void NeddPEAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
+    const auto startTicks = juce::Time::getHighResolutionTicks();
+
     reader.read (snapshot);
     const auto transport = readTransport (buffer.getNumSamples());
     engine.process (buffer, midi, snapshot, transport);
+
+    // Fraction of the real-time budget used by this block, smoothed for display.
+    const double elapsed = juce::Time::highResolutionTicksToSeconds (juce::Time::getHighResolutionTicks() - startTicks);
+    const double budget = buffer.getNumSamples() / std::max (1.0, getSampleRate());
+    cpuLoad += 0.1f * ((float) (elapsed / budget) - cpuLoad);
+    shared.telemetry.cpuLoad.store (cpuLoad, std::memory_order_relaxed);
 }
 
 juce::AudioProcessorEditor* NeddPEAudioProcessor::createEditor()
@@ -333,6 +341,7 @@ juce::ValueTree NeddPEAudioProcessor::createStateTree (bool includePerformanceDa
             midiMap.appendChild (node, nullptr);
         }
         root.appendChild (midiMap, nullptr);
+        root.setProperty ("editorScale", editorScale, nullptr);
     }
 
     return root;
@@ -416,6 +425,7 @@ void NeddPEAudioProcessor::applyStateTree (const juce::ValueTree& root, bool inc
                 ccToParam[(size_t) cc] = index;
         }
         if (onMidiLearnChanged) onMidiLearnChanged();
+        setEditorScale ((float) root.getProperty ("editorScale", 1.0f));
     }
 
     currentPresetName = root.getProperty (ids::preset, "Init").toString();
