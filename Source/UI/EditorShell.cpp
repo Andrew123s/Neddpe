@@ -110,7 +110,7 @@ void HeaderBar::resized()
 
     if (morphTools != nullptr)
     {
-        morphTools->setBounds (r.removeFromRight (250));
+        morphTools->setBounds (r.removeFromRight (310));
         r.removeFromRight (12);
     }
     if (presetTools != nullptr)

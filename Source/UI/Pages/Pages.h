@@ -135,5 +135,8 @@ std::unique_ptr<juce::Component> createEffectsOverview (EditorContext& ctx);
 std::unique_ptr<Page> createSequencerPage (EditorContext& ctx);
 std::unique_ptr<Page> createArpPage (EditorContext& ctx);
 std::unique_ptr<Page> createNoteEditorPage (EditorContext& ctx);
+std::unique_ptr<Page> createPresetsPage (EditorContext& ctx);
+std::unique_ptr<juce::Component> createPresetTools (EditorContext& ctx);
+std::unique_ptr<juce::Component> createMorphTools (EditorContext& ctx);
 
 } // namespace nedd::ui

@@ -80,8 +80,6 @@ ParamKnob::ParamKnob (EditorContext& c, int index, const juce::String& text, juc
     attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (ctx.state, def.id, *this);
     setDoubleClickReturnValue (true, def.defaultValue);
 
-    onDragStart = [this] { ctx.processor.getUndoManager().beginNewTransaction (getParamDef (paramIndex).name); };
-
     ctx.addListener (this);
 }
 
@@ -274,7 +272,6 @@ ParamSlider::ParamSlider (EditorContext& ctx, int paramIndex, juce::Colour colou
     setTooltip (helpForParam (paramIndex));
     attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (ctx.state, def.id, *this);
     setDoubleClickReturnValue (true, def.defaultValue);
-    onDragStart = [&ctx, paramIndex] { ctx.processor.getUndoManager().beginNewTransaction (getParamDef (paramIndex).name); };
 }
 
 ParamChoice::ParamChoice (EditorContext& ctx, int paramIndex)

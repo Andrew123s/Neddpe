@@ -192,7 +192,6 @@ void EnvelopeDisplay::mouseDown (const juce::MouseEvent& e)
     if (dragging == Node::None)
         return;
 
-    ctx.processor.getUndoManager().beginNewTransaction ("Edit envelope");
     for (auto f : { EnvField::Attack, EnvField::Decay, EnvField::Sustain, EnvField::Release })
         if (auto* p = ctx.processor.getParameterByIndex (pid::env (envIndex, f)))
             p->beginChangeGesture();

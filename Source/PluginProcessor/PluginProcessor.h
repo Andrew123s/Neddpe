@@ -5,6 +5,9 @@
 #include "Synth/EngineShared.h"
 #include "Synth/SynthEngine.h"
 #include "Sequencer/ClipTools.h"
+#include "Presets/PatchRandomizer.h"
+#include "Presets/PresetManager.h"
+#include "Presets/PresetState.h"
 
 namespace nedd
 {
@@ -59,8 +62,23 @@ public:
     /** Restores a tree made by createStateTree(). Missing sections fall back to defaults. */
     void applyStateTree (const juce::ValueTree& tree, bool includePerformanceData);
 
-    /** Sets every parameter to its default and clears structured sound data. */
+    /** Sets every parameter to its default and clears structured sound data (undoable). */
     void resetToInitPatch();
+
+    /** The current sound as a preset (parameters + structured sound data). */
+    PresetState captureState() const;
+    /** Applies a sound. A non-empty undoName makes the whole change a single undo step. */
+    void applyState (const PresetState& state, const juce::String& undoName);
+
+    // Presets and sound generation (message thread)
+    PresetManager& getPresetManager();
+    const MutationHistory& getMutationHistory() const noexcept { return mutationHistory; }
+    void randomise (PatchRandomizer::Mode mode);
+    void mutate (float amount);
+    void recallMutation (int index);
+
+    /** Changes whenever structured sound data (names, curves, patterns, morph) changes. */
+    int getSoundVersion() const noexcept { return soundVersion; }
 
     // Structured sound data (message thread). Setters publish to the audio thread.
     const juce::String& getMacroName (int index) const { return macroNames[(size_t) juce::jlimit (0, kNumMacros - 1, index)]; }
@@ -114,7 +132,12 @@ public:
     void setEditorScale (float s) { editorScale = juce::jlimit (0.75f, 1.5f, s); }
 
     const juce::String& getCurrentPresetName() const noexcept { return currentPresetName; }
-    void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
+    const juce::String& getCurrentPresetCategory() const noexcept { return currentPresetCategory; }
+    void setCurrentPresetName (const juce::String& name, const juce::String& category = "User")
+    {
+        currentPresetName = name;
+        currentPresetCategory = category;
+    }
 
     /** Current parameter values (plain) read from the tree, for the message thread. */
     void readParameters (ParamSnapshot& out) const { reader.read (out); }
@@ -123,7 +146,24 @@ public:
 
     static constexpr int kStateVersion = 1;
 
+    /** Sets several parameters as one undo step (e.g. adding a modulation route). */
+    void setParametersUndoable (const std::vector<std::pair<int, float>>& changes, const juce::String& undoName);
+
+    /** Suppresses gesture-based undo recording while alive (bulk changes create their own undo step). */
+    struct ScopedUndoSuppression
+    {
+        explicit ScopedUndoSuppression (NeddPEAudioProcessor& p) : owner (p) { ++owner.undoSuppression; }
+        ~ScopedUndoSuppression() { --owner.undoSuppression; }
+        NeddPEAudioProcessor& owner;
+    };
+
 private:
+    class ParameterUndoRecorder;
+    friend class ParameterUndoRecorder;
+
+    void applyStateDirect (const PresetState& state);
+    void applyStructured (const PresetState& s);
+
     void timerCallback() override;
     void publishLfoShapes();
     void publishTuning();
@@ -133,7 +173,7 @@ private:
     void publishClip();
     TransportInfo readTransport (int numSamples);
 
-    juce::UndoManager undoManager { 30000, 30 };
+    juce::UndoManager undoManager { 5000, 30 };
     juce::AudioProcessorValueTreeState state;
     std::array<juce::RangedAudioParameter*, (size_t) pid::count> parameters {};
     ParamReader reader;
@@ -161,6 +201,13 @@ private:
     float cpuLoad = 0.0f;
     float editorScale = 1.0f;
     juce::String currentPresetName { "Init" };
+    juce::String currentPresetCategory { "User" };
+    int soundVersion = 0;
+    std::unique_ptr<PresetManager> presetManager;
+    std::unique_ptr<ParameterUndoRecorder> undoRecorder;
+    int undoSuppression = 0;
+    MutationHistory mutationHistory;
+    uint32_t generatorSeed = 0x5EED;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeddPEAudioProcessor)
 };

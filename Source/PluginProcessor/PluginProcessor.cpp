@@ -6,26 +6,12 @@ namespace nedd
 namespace ids
 {
     const juce::Identifier root { "NeddPE" };
-    const juce::Identifier version { "version" };
-    const juce::Identifier preset { "preset" };
     const juce::Identifier params { "PARAMS" };
-    const juce::Identifier param { "PARAM" };
     const juce::Identifier id { "id" };
-    const juce::Identifier value { "value" };
-    const juce::Identifier macros { "Macros" };
-    const juce::Identifier macro { "Macro" };
-    const juce::Identifier index { "index" };
-    const juce::Identifier name { "name" };
-    const juce::Identifier lfoShapes { "LfoShapes" };
-    const juce::Identifier lfo { "Lfo" };
-    const juce::Identifier points { "points" };
-    const juce::Identifier morphB { "MorphB" };
     const juce::Identifier midiMap { "MidiMap" };
     const juce::Identifier map { "Map" };
     const juce::Identifier cc { "cc" };
     const juce::Identifier tuningTree { "Tuning" };
-    const juce::Identifier sequencer { "Sequencer" };
-    const juce::Identifier arpPatternTree { "ArpPattern" };
     const juce::Identifier clipTree { "Clip" };
 } // namespace ids
 
@@ -41,17 +27,119 @@ namespace
 
         bool perform() override { apply (after); return true; }
         bool undo() override { apply (before); return true; }
-        int getSizeInUnits() override { return (int) sizeof (T); }
+        int getSizeInUnits() override { return 20; }
 
     private:
         std::function<void (const T&)> apply;
         T before, after;
     };
+    /** Undo step for one or more parameter changes. */
+    class ParameterChangeAction : public juce::UndoableAction
+    {
+    public:
+        struct Change { int index; float before, after; };
+
+        ParameterChangeAction (NeddPEAudioProcessor& p, std::vector<Change> c) : processor (p), changes (std::move (c)) {}
+
+        bool perform() override { apply (true); return true; }
+        bool undo() override { apply (false); return true; }
+        int getSizeInUnits() override { return 1 + (int) changes.size() / 8; }
+
+    private:
+        void apply (bool forward)
+        {
+            const NeddPEAudioProcessor::ScopedUndoSuppression suppress (processor);
+            for (const auto& ch : changes)
+                processor.setParameterPlain (ch.index, forward ? ch.after : ch.before);
+        }
+
+        NeddPEAudioProcessor& processor;
+        std::vector<Change> changes;
+    };
+
+    /** Undo step for a whole sound (preset load, randomise, mutate, init). */
+    class StateSwapAction : public juce::UndoableAction
+    {
+    public:
+        StateSwapAction (std::function<void (const PresetState&)> applyFn, PresetState b, PresetState a)
+            : apply (std::move (applyFn)), before (std::move (b)), after (std::move (a)) {}
+
+        bool perform() override { apply (after); return true; }
+        bool undo() override { apply (before); return true; }
+        int getSizeInUnits() override { return 50; }
+
+    private:
+        std::function<void (const PresetState&)> apply;
+        PresetState before, after;
+    };
 } // namespace
+
+/**
+    Turns UI gestures into undo steps. A gesture group starts when the first gesture begins and
+    every parameter changed during it lands in the same undo transaction, so dragging an envelope
+    node (several parameters) is a single step. Host automation (no gestures) is never recorded.
+*/
+class NeddPEAudioProcessor::ParameterUndoRecorder : private juce::AudioProcessorParameter::Listener
+{
+public:
+    explicit ParameterUndoRecorder (NeddPEAudioProcessor& p) : processor (p)
+    {
+        for (const auto& d : getParamDefs())
+            processor.parameters[(size_t) d.index]->addListener (this);
+    }
+
+    ~ParameterUndoRecorder() override
+    {
+        for (const auto& d : getParamDefs())
+            processor.parameters[(size_t) d.index]->removeListener (this);
+    }
+
+private:
+    void parameterValueChanged (int, float) override {}
+
+    void parameterGestureChanged (int parameterIndex, bool starting) override
+    {
+        if (processor.undoSuppression > 0 || ! juce::MessageManager::existsAndIsCurrentThread())
+            return;
+
+        const int index = findIndex (parameterIndex);
+        if (index < 0)
+            return;
+
+        auto* param = processor.parameters[(size_t) index];
+        const float plain = param->convertFrom0to1 (param->getValue());
+
+        if (starting)
+        {
+            if (active.empty())
+                processor.undoManager.beginNewTransaction (getParamDef (index).name);
+            active[index] = plain;
+            return;
+        }
+
+        const auto it = active.find (index);
+        if (it == active.end())
+            return;
+        const float before = it->second;
+        active.erase (it);
+
+        if (std::abs (plain - before) > 1.0e-6f)
+            processor.undoManager.perform (new ParameterChangeAction (processor, { { index, before, plain } }));
+    }
+
+    int findIndex (int processorParameterIndex)
+    {
+        // AudioProcessor parameter order equals the definition order.
+        return juce::isPositiveAndBelow (processorParameterIndex, pid::count) ? processorParameterIndex : -1;
+    }
+
+    NeddPEAudioProcessor& processor;
+    std::map<int, float> active;
+};
 
 NeddPEAudioProcessor::NeddPEAudioProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      state (*this, &undoManager, ids::params, createParameterLayout())
+      state (*this, nullptr, ids::params, createParameterLayout())
 {
     for (const auto& d : getParamDefs())
     {
@@ -60,6 +148,7 @@ NeddPEAudioProcessor::NeddPEAudioProcessor()
     }
 
     reader.attach (state);
+    undoRecorder = std::make_unique<ParameterUndoRecorder> (*this);
     snapshot.setToDefaults();
     ccToParam.fill (-1);
 
@@ -74,6 +163,7 @@ NeddPEAudioProcessor::NeddPEAudioProcessor()
 NeddPEAudioProcessor::~NeddPEAudioProcessor()
 {
     stopTimer();
+    undoRecorder.reset();
 }
 
 void NeddPEAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -161,16 +251,54 @@ void NeddPEAudioProcessor::setParameterPlain (int index, float plainValue)
 
 void NeddPEAudioProcessor::resetToInitPatch()
 {
-    for (const auto& d : getParamDefs())
-        setParameterPlain (d.index, d.defaultValue);
+    applyState (PresetState(), "Init patch");
+}
 
-    macroNames = { "MOVEMENT", "TONE", "SPACE", "DRIVE" };
-    lfoShapes = dsp::LfoCustomShapes();
-    publishLfoShapes();
-    clearMorphTarget();
-    setPattern (SequencerPattern());
-    setArpPattern (ArpPattern());
-    currentPresetName = "Init";
+PresetManager& NeddPEAudioProcessor::getPresetManager()
+{
+    if (presetManager == nullptr)
+        presetManager = std::make_unique<PresetManager> (*this);
+    return *presetManager;
+}
+
+void NeddPEAudioProcessor::randomise (PatchRandomizer::Mode mode)
+{
+    auto current = captureState();
+    if (mutationHistory.entries.empty())
+    {
+        current.name = "Origin: " + current.name;
+        mutationHistory.push (current);
+    }
+
+    generatorSeed = generatorSeed * 1664525u + 1013904223u + (uint32_t) juce::Time::getMillisecondCounter();
+    auto next = PatchRandomizer::randomise (captureState(), mode, generatorSeed);
+    next.name = "Random " + PatchRandomizer::getModeNames()[(int) mode] + " " + juce::String ((int) mutationHistory.entries.size());
+    applyState (next, "Randomise " + PatchRandomizer::getModeNames()[(int) mode]);
+    mutationHistory.push (next);
+}
+
+void NeddPEAudioProcessor::mutate (float amount)
+{
+    auto current = captureState();
+    if (mutationHistory.entries.empty())
+    {
+        current.name = "Origin: " + current.name;
+        mutationHistory.push (current);
+    }
+
+    generatorSeed = generatorSeed * 1664525u + 1013904223u + (uint32_t) juce::Time::getMillisecondCounter();
+    auto next = PatchRandomizer::mutate (captureState(), amount, generatorSeed);
+    next.name = "Mutation " + juce::String ((int) mutationHistory.entries.size());
+    applyState (next, "Mutate");
+    mutationHistory.push (next);
+}
+
+void NeddPEAudioProcessor::recallMutation (int index)
+{
+    if (! juce::isPositiveAndBelow (index, (int) mutationHistory.entries.size()))
+        return;
+    applyState (mutationHistory.entries[(size_t) index], "Recall " + mutationHistory.entries[(size_t) index].name);
+    mutationHistory.current = index;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -179,6 +307,7 @@ void NeddPEAudioProcessor::resetToInitPatch()
 void NeddPEAudioProcessor::setMacroName (int index, const juce::String& name)
 {
     macroNames[(size_t) juce::jlimit (0, kNumMacros - 1, index)] = name.substring (0, 24).toUpperCase();
+    ++soundVersion;
 }
 
 void NeddPEAudioProcessor::setTuning (const TuningData& newTuning)
@@ -232,10 +361,11 @@ void NeddPEAudioProcessor::swapMorphAB()
     reader.read (current);
     const ParamSnapshot target = *morphTarget;
 
-    undoManager.beginNewTransaction ("Swap Morph A/B");
+    std::vector<std::pair<int, float>> changes;
     for (const auto& d : getParamDefs())
         if (d.morphable)
-            setParameterPlain (d.index, target[d.index]);
+            changes.push_back ({ d.index, target[d.index] });
+    setParametersUndoable (changes, "Swap Morph A/B");
 
     setMorphTarget (current);
 }
@@ -397,56 +527,82 @@ void NeddPEAudioProcessor::timerCallback()
 // ---------------------------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------------------------
-juce::ValueTree NeddPEAudioProcessor::createStateTree (bool includePerformanceData) const
+PresetState NeddPEAudioProcessor::captureState() const
 {
-    juce::ValueTree root (ids::root);
-    root.setProperty (ids::version, kStateVersion, nullptr);
-    root.setProperty (ids::preset, currentPresetName, nullptr);
-
-    juce::ValueTree params (ids::params);
+    PresetState st;
+    st.name = currentPresetName;
+    st.category = currentPresetCategory;
     for (const auto& d : getParamDefs())
     {
-        juce::ValueTree p (ids::param);
-        p.setProperty (ids::id, d.id, nullptr);
-        p.setProperty (ids::value, parameters[(size_t) d.index]->convertFrom0to1 (parameters[(size_t) d.index]->getValue()), nullptr);
-        params.appendChild (p, nullptr);
+        const auto* p = parameters[(size_t) d.index];
+        st.params[d.index] = p->convertFrom0to1 (p->getValue());
     }
-    root.appendChild (params, nullptr);
-
-    juce::ValueTree macros (ids::macros);
-    for (int m = 0; m < kNumMacros; ++m)
-    {
-        juce::ValueTree node (ids::macro);
-        node.setProperty (ids::index, m, nullptr);
-        node.setProperty (ids::name, macroNames[(size_t) m], nullptr);
-        macros.appendChild (node, nullptr);
-    }
-    root.appendChild (macros, nullptr);
-
-    juce::ValueTree shapes (ids::lfoShapes);
-    for (int l = 0; l < kNumLfos; ++l)
-    {
-        juce::StringArray pts;
-        for (const auto& pt : lfoShapes.points[(size_t) l])
-            pts.add (juce::String (pt.x, 4) + "," + juce::String (pt.y, 4));
-        juce::ValueTree node (ids::lfo);
-        node.setProperty (ids::index, l, nullptr);
-        node.setProperty (ids::points, pts.joinIntoString (";"), nullptr);
-        shapes.appendChild (node, nullptr);
-    }
-    root.appendChild (shapes, nullptr);
-
+    st.macroNames = macroNames;
+    st.lfoShapes = lfoShapes;
+    st.pattern = pattern;
+    st.arpPattern = arpPattern;
+    st.hasMorphTarget = morphTarget != nullptr;
     if (morphTarget != nullptr)
+        st.morphTarget = *morphTarget;
+    return st;
+}
+
+void NeddPEAudioProcessor::applyStructured (const PresetState& s)
+{
+    currentPresetName = s.name;
+    currentPresetCategory = s.category;
+    macroNames = s.macroNames;
+    lfoShapes = s.lfoShapes;
+    lfoShapes.rebuildTables();
+    publishLfoShapes();
+    pattern = s.pattern;
+    arpPattern = s.arpPattern;
+    ++patternVersion;
+    publishPattern();
+    publishArpPattern();
+    if (s.hasMorphTarget)
+        morphTarget = std::make_unique<ParamSnapshot> (s.morphTarget);
+    else
+        morphTarget.reset();
+    publishMorphTarget();
+    ++soundVersion;
+}
+
+void NeddPEAudioProcessor::applyStateDirect (const PresetState& st)
+{
+    const ScopedUndoSuppression suppress (*this);
+    for (const auto& d : getParamDefs())
+        setParameterPlain (d.index, juce::jlimit (d.range.start, d.range.end, st.params[d.index]));
+    applyStructured (st);
+}
+
+void NeddPEAudioProcessor::applyState (const PresetState& st, const juce::String& undoName)
+{
+    if (undoName.isEmpty())
     {
-        juce::ValueTree morph (ids::morphB);
-        for (const auto& d : getParamDefs())
-            if (d.morphable)
-                morph.setProperty (juce::Identifier (d.id), (*morphTarget)[d.index], nullptr);
-        root.appendChild (morph, nullptr);
+        applyStateDirect (st);
+        return;
     }
 
-    root.appendChild (pattern.toValueTree(), nullptr);
-    root.appendChild (arpPattern.toValueTree(), nullptr);
+    undoManager.beginNewTransaction (undoName);
+    undoManager.perform (new StateSwapAction ([this] (const PresetState& v) { applyStateDirect (v); }, captureState(), st));
+}
+
+void NeddPEAudioProcessor::setParametersUndoable (const std::vector<std::pair<int, float>>& changes, const juce::String& undoName)
+{
+    std::vector<ParameterChangeAction::Change> list;
+    for (const auto& [index, value] : changes)
+    {
+        const auto* p = parameters[(size_t) index];
+        list.push_back ({ index, p->convertFrom0to1 (p->getValue()), value });
+    }
+    undoManager.beginNewTransaction (undoName);
+    undoManager.perform (new ParameterChangeAction (*this, std::move (list)));
+}
+
+juce::ValueTree NeddPEAudioProcessor::createStateTree (bool includePerformanceData) const
+{
+    auto root = captureState().toValueTree();
 
     if (includePerformanceData)
     {
@@ -478,71 +634,7 @@ void NeddPEAudioProcessor::applyStateTree (const juce::ValueTree& root, bool inc
     if (! root.hasType (ids::root))
         return;
 
-    // Parameters: anything missing from the tree returns to its default, so old presets load cleanly.
-    std::vector<float> values ((size_t) pid::count);
-    for (const auto& d : getParamDefs())
-        values[(size_t) d.index] = d.defaultValue;
-
-    const auto params = root.getChildWithName (ids::params);
-    for (const auto& p : params)
-    {
-        const int index = findParamIndex (p.getProperty (ids::id).toString());
-        if (index >= 0)
-            values[(size_t) index] = (float) p.getProperty (ids::value);
-    }
-
-    for (const auto& d : getParamDefs())
-        setParameterPlain (d.index, juce::jlimit (d.range.start, d.range.end, values[(size_t) d.index]));
-
-    macroNames = { "MOVEMENT", "TONE", "SPACE", "DRIVE" };
-    for (const auto& node : root.getChildWithName (ids::macros))
-    {
-        const int m = node.getProperty (ids::index);
-        if (m >= 0 && m < kNumMacros)
-            macroNames[(size_t) m] = node.getProperty (ids::name).toString();
-    }
-
-    lfoShapes = dsp::LfoCustomShapes();
-    for (const auto& node : root.getChildWithName (ids::lfoShapes))
-    {
-        const int l = node.getProperty (ids::index);
-        if (l < 0 || l >= kNumLfos)
-            continue;
-        std::vector<dsp::LfoCustomShapes::Point> pts;
-        for (const auto& token : juce::StringArray::fromTokens (node.getProperty (ids::points).toString(), ";", ""))
-        {
-            const auto x = token.upToFirstOccurrenceOf (",", false, false).getFloatValue();
-            const auto y = token.fromFirstOccurrenceOf (",", false, false).getFloatValue();
-            pts.push_back ({ juce::jlimit (0.0f, 1.0f, x), juce::jlimit (-1.0f, 1.0f, y) });
-        }
-        if (pts.size() >= 2 && pts.size() <= (size_t) dsp::LfoCustomShapes::kMaxPoints)
-            lfoShapes.points[(size_t) l] = pts;
-    }
-    lfoShapes.rebuildTables();
-    publishLfoShapes();
-
-    const auto morph = root.getChildWithName (ids::morphB);
-    if (morph.isValid())
-    {
-        ParamSnapshot target;
-        for (const auto& d : getParamDefs())
-            target[d.index] = values[(size_t) d.index];
-        for (const auto& d : getParamDefs())
-            if (morph.hasProperty (juce::Identifier (d.id)))
-                target[d.index] = (float) morph.getProperty (juce::Identifier (d.id));
-        setMorphTarget (target);
-    }
-    else
-    {
-        clearMorphTarget();
-    }
-
-    SequencerPattern loadedPattern;
-    loadedPattern.fromValueTree (root.getChildWithName (ids::sequencer));
-    setPattern (loadedPattern);
-    ArpPattern loadedArp;
-    loadedArp.fromValueTree (root.getChildWithName (ids::arpPatternTree));
-    setArpPattern (loadedArp);
+    applyState (PresetState::fromValueTree (root), {});
 
     if (includePerformanceData)
     {
@@ -567,8 +659,6 @@ void NeddPEAudioProcessor::applyStateTree (const juce::ValueTree& root, bool inc
         if (onMidiLearnChanged) onMidiLearnChanged();
         setEditorScale ((float) root.getProperty ("editorScale", 1.0f));
     }
-
-    currentPresetName = root.getProperty (ids::preset, "Init").toString();
 }
 
 void NeddPEAudioProcessor::getStateInformation (juce::MemoryBlock& destData)

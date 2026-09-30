@@ -53,8 +53,9 @@ float EditorContext::liveModulation (ModDest dest) const
 void EditorContext::setParam (int index, float plainValue, const juce::String& undoName)
 {
     if (undoName.isNotEmpty())
-        processor.getUndoManager().beginNewTransaction (undoName);
-    processor.setParameterPlain (index, plainValue);
+        processor.setParametersUndoable ({ { index, plainValue } }, undoName);
+    else
+        processor.setParameterPlain (index, plainValue);
     snapshot[index] = plainValue;
 }
 
@@ -67,13 +68,17 @@ int EditorContext::addModulation (ModSource source, ModDest dest, float amount)
         if (! empty)
             continue;
 
-        processor.getUndoManager().beginNewTransaction ("Add modulation");
         const bool bipolar = getModSourceInfo (source).bipolar;
-        setParam (pid::mod (s, ModSlotField::Source), (float) source);
-        setParam (pid::mod (s, ModSlotField::Dest), (float) dest);
-        setParam (pid::mod (s, ModSlotField::Amount), amount);
-        setParam (pid::mod (s, ModSlotField::Curve), (float) ModCurve::Linear);
-        setParam (pid::mod (s, ModSlotField::Polarity), (float) (bipolar ? ModPolarity::Bipolar : ModPolarity::Unipolar));
+        const std::vector<std::pair<int, float>> changes {
+            { pid::mod (s, ModSlotField::Source), (float) source },
+            { pid::mod (s, ModSlotField::Dest), (float) dest },
+            { pid::mod (s, ModSlotField::Amount), amount },
+            { pid::mod (s, ModSlotField::Curve), (float) ModCurve::Linear },
+            { pid::mod (s, ModSlotField::Polarity), (float) (bipolar ? ModPolarity::Bipolar : ModPolarity::Unipolar) },
+        };
+        processor.setParametersUndoable (changes, "Add " + juce::String (getModSourceInfo (source).name) + " > " + getModDestInfo (dest).name);
+        for (const auto& [index, value] : changes)
+            snapshot[index] = value;
         routingCache.build (snapshot);
         return s;
     }
@@ -82,10 +87,14 @@ int EditorContext::addModulation (ModSource source, ModDest dest, float amount)
 
 void EditorContext::removeModulationSlot (int slot)
 {
-    processor.getUndoManager().beginNewTransaction ("Remove modulation");
-    setParam (pid::mod (slot, ModSlotField::Source), (float) ModSource::None);
-    setParam (pid::mod (slot, ModSlotField::Dest), (float) ModDest::None);
-    setParam (pid::mod (slot, ModSlotField::Amount), 0.0f);
+    const std::vector<std::pair<int, float>> changes {
+        { pid::mod (slot, ModSlotField::Source), (float) ModSource::None },
+        { pid::mod (slot, ModSlotField::Dest), (float) ModDest::None },
+        { pid::mod (slot, ModSlotField::Amount), 0.0f },
+    };
+    processor.setParametersUndoable (changes, "Remove modulation");
+    for (const auto& [index, value] : changes)
+        snapshot[index] = value;
     routingCache.build (snapshot);
 }
 

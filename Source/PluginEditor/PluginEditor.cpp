@@ -22,6 +22,7 @@ NeddPEEditor::NeddPEEditor (NeddPEAudioProcessor& p)
         { (int) PageId::Arp, "ARPEGGIATOR" },
         { (int) PageId::Sequencer, "SEQUENCER" },
         { (int) PageId::NoteEditor, "NOTE EDITOR" },
+        { (int) PageId::Presets, "PRESETS" },
         { (int) PageId::Settings, "SETTINGS" },
     };
 
@@ -33,6 +34,10 @@ NeddPEEditor::NeddPEEditor (NeddPEAudioProcessor& p)
     addAndMakeVisible (root);
     for (auto* c : std::initializer_list<juce::Component*> { &header, &nav, &strip })
         root.addAndMakeVisible (c);
+
+    presetTools = createPresetTools (ctx);
+    morphTools = createMorphTools (ctx);
+    header.setTools (presetTools.get(), morphTools.get());
 
     showPage ((int) PageId::Main);
 
@@ -49,6 +54,8 @@ NeddPEEditor::~NeddPEEditor()
 {
     stopTimer();
     pages.clear();
+    presetTools.reset();
+    morphTools.reset();
     juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
     setLookAndFeel (nullptr);
 }
@@ -77,7 +84,7 @@ std::unique_ptr<Page> NeddPEEditor::createPage (int id)
         case PageId::Arp:         return createArpPage (ctx);
         case PageId::Sequencer:   return createSequencerPage (ctx);
         case PageId::NoteEditor:  return createNoteEditorPage (ctx);
-        case PageId::Presets:
+        case PageId::Presets:     return createPresetsPage (ctx);
         case PageId::Count:
             break;
     }

@@ -40,6 +40,7 @@ private:
     ui::HeaderBar header { ctx };
     ui::NavRail nav;
     ui::PerformanceStrip strip { ctx };
+    std::unique_ptr<juce::Component> presetTools, morphTools;
     std::map<int, std::unique_ptr<ui::Page>> pages;
     std::vector<std::pair<int, juce::String>> pageList;
     int currentPage = -1;
