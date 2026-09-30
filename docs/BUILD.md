@@ -101,6 +101,9 @@ Before distributing a binary, read the licensing note in the [README](../README.
   locates MSVC itself.
 - **JUCE download fails** (offline or behind a proxy): clone `https://github.com/juce-framework/JUCE` at tag
   `8.0.9` and pass `-DNEDDPE_JUCE_DIR=...`.
+- **`MSB8066` / "Build step for juce failed" while configuring with the Visual Studio generator**: the checkout path is
+  too long for MSBuild's 260-character limit (FetchContent creates deep paths). Clone to a short path such as
+  `C:\dev\NeddPE`, or use the Ninja presets.
 - **The DAW does not list NeddPE**: make sure the whole `NeddPE.vst3` folder was copied, then force a rescan.
   You can check the bundle without a DAW: `NeddPETests.exe --validate-vst3 path\to\NeddPE.vst3`.
 - **Copy step fails** with `NEDDPE_COPY_PLUGIN=ON`: the build shell needs administrator rights to write to
