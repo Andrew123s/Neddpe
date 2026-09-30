@@ -132,5 +132,8 @@ private:
 std::unique_ptr<Page> createLfoPage (EditorContext& ctx);
 std::unique_ptr<Page> createEffectsPage (EditorContext& ctx);
 std::unique_ptr<juce::Component> createEffectsOverview (EditorContext& ctx);
+std::unique_ptr<Page> createSequencerPage (EditorContext& ctx);
+std::unique_ptr<Page> createArpPage (EditorContext& ctx);
+std::unique_ptr<Page> createNoteEditorPage (EditorContext& ctx);
 
 } // namespace nedd::ui

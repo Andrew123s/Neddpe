@@ -59,6 +59,9 @@ struct EngineTelemetry
     std::atomic<int> arpStep { -1 };
     std::atomic<int> seqStep { -1 };
     std::atomic<double> clipPosition { 0.0 };
+    std::atomic<bool> clipPlaying { false };
+    std::atomic<bool> clipRecording { false };
+    std::atomic<int> arpHeld { 0 };
     std::atomic<float> cpuLoad { 0.0f };
 };
 

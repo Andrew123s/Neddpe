@@ -24,7 +24,30 @@ namespace ids
     const juce::Identifier map { "Map" };
     const juce::Identifier cc { "cc" };
     const juce::Identifier tuningTree { "Tuning" };
+    const juce::Identifier sequencer { "Sequencer" };
+    const juce::Identifier arpPatternTree { "ArpPattern" };
+    const juce::Identifier clipTree { "Clip" };
 } // namespace ids
+
+namespace
+{
+    /** Undo step that swaps a whole structured value (pattern, clip) between two states. */
+    template <typename T>
+    class ValueSwapAction : public juce::UndoableAction
+    {
+    public:
+        ValueSwapAction (std::function<void (const T&)> applyFn, T beforeValue, T afterValue)
+            : apply (std::move (applyFn)), before (std::move (beforeValue)), after (std::move (afterValue)) {}
+
+        bool perform() override { apply (after); return true; }
+        bool undo() override { apply (before); return true; }
+        int getSizeInUnits() override { return (int) sizeof (T); }
+
+    private:
+        std::function<void (const T&)> apply;
+        T before, after;
+    };
+} // namespace
 
 NeddPEAudioProcessor::NeddPEAudioProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
@@ -42,6 +65,9 @@ NeddPEAudioProcessor::NeddPEAudioProcessor()
 
     publishLfoShapes();
     publishTuning();
+    publishPattern();
+    publishArpPattern();
+    publishClip();
     startTimerHz (30);
 }
 
@@ -54,6 +80,7 @@ void NeddPEAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
 {
     engine.prepare (sampleRate, std::max (samplesPerBlock, 32));
     setLatencySamples (0);
+    isPrepared = true;
 }
 
 void NeddPEAudioProcessor::releaseResources() {}
@@ -141,6 +168,8 @@ void NeddPEAudioProcessor::resetToInitPatch()
     lfoShapes = dsp::LfoCustomShapes();
     publishLfoShapes();
     clearMorphTarget();
+    setPattern (SequencerPattern());
+    setArpPattern (ArpPattern());
     currentPresetName = "Init";
 }
 
@@ -229,6 +258,92 @@ void NeddPEAudioProcessor::publishMorphTarget()
 }
 
 // ---------------------------------------------------------------------------------------------
+// Sequencer data and clip
+// ---------------------------------------------------------------------------------------------
+void NeddPEAudioProcessor::publishPattern() { shared.pattern.publish (std::make_unique<SequencerPattern> (pattern)); }
+void NeddPEAudioProcessor::publishArpPattern() { shared.arpPattern.publish (std::make_unique<ArpPattern> (arpPattern)); }
+void NeddPEAudioProcessor::publishClip() { shared.clip.publish (std::make_unique<NoteClip> (clip)); }
+
+void NeddPEAudioProcessor::setPattern (const SequencerPattern& newPattern, const juce::String& undoName)
+{
+    auto apply = [this] (const SequencerPattern& p) { pattern = p; ++patternVersion; publishPattern(); };
+    if (undoName.isNotEmpty() && ! (newPattern == pattern))
+    {
+        undoManager.beginNewTransaction (undoName);
+        undoManager.perform (new ValueSwapAction<SequencerPattern> (apply, pattern, newPattern));
+    }
+    else
+        apply (newPattern);
+}
+
+void NeddPEAudioProcessor::setArpPattern (const ArpPattern& newPattern, const juce::String& undoName)
+{
+    auto apply = [this] (const ArpPattern& p) { arpPattern = p; ++patternVersion; publishArpPattern(); };
+    if (undoName.isNotEmpty() && ! (newPattern == arpPattern))
+    {
+        undoManager.beginNewTransaction (undoName);
+        undoManager.perform (new ValueSwapAction<ArpPattern> (apply, arpPattern, newPattern));
+    }
+    else
+        apply (newPattern);
+}
+
+void NeddPEAudioProcessor::setClip (const NoteClip& newClip, const juce::String& undoName)
+{
+    auto apply = [this] (const NoteClip& c) { clip = c; ++clipVersion; publishClip(); };
+    if (undoName.isNotEmpty())
+    {
+        undoManager.beginNewTransaction (undoName);
+        undoManager.perform (new ValueSwapAction<NoteClip> (apply, clip, newClip));
+    }
+    else
+        apply (newClip);
+}
+
+void NeddPEAudioProcessor::clipPlay()
+{
+    if (recorder.isActive())
+        return;
+    shared.clipCommand.store ((int) ClipCommand::Play);
+}
+
+void NeddPEAudioProcessor::clipStop()
+{
+    if (recorder.isActive())
+        recordStopPending = true;
+    shared.clipCommand.store ((int) ClipCommand::Stop);
+}
+
+void NeddPEAudioProcessor::clipRecord (bool overdub)
+{
+    if (recorder.isActive())
+        return;
+    RecordedEvent stale;
+    while (shared.recorded.pop (stale)) {}
+    recorder.begin (clip, overdub, shared.clipLoop.load());
+    recordStopPending = false;
+    shared.clipCommand.store ((int) ClipCommand::Record);
+}
+
+void NeddPEAudioProcessor::serviceRecorder()
+{
+    RecordedEvent e;
+    int processed = 0;
+    while (processed++ < 8192 && shared.recorded.pop (e))
+        recorder.consume (e);
+
+    // Finalise once the audio thread has actually stopped recording, so no events are lost.
+    const bool audioStopped = ! shared.telemetry.clipRecording.load() || ! isPrepared;
+    if (recorder.isActive() && recordStopPending && audioStopped)
+    {
+        while (shared.recorded.pop (e))
+            recorder.consume (e);
+        setClip (recorder.finish (shared.telemetry.clipPosition.load()), "Record performance");
+        recordStopPending = false;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
 // MIDI learn
 // ---------------------------------------------------------------------------------------------
 void NeddPEAudioProcessor::clearMidiMapping (int paramIndex)
@@ -249,6 +364,10 @@ int NeddPEAudioProcessor::getMidiMappingFor (int paramIndex) const
 
 void NeddPEAudioProcessor::timerCallback()
 {
+    serviceRecorder();
+    shared.pattern.collectGarbage();
+    shared.arpPattern.collectGarbage();
+    shared.clip.collectGarbage();
     shared.tuning.collectGarbage();
     shared.lfoShapes.collectGarbage();
     shared.morphTarget.collectGarbage();
@@ -326,8 +445,15 @@ juce::ValueTree NeddPEAudioProcessor::createStateTree (bool includePerformanceDa
         root.appendChild (morph, nullptr);
     }
 
+    root.appendChild (pattern.toValueTree(), nullptr);
+    root.appendChild (arpPattern.toValueTree(), nullptr);
+
     if (includePerformanceData)
     {
+        auto clipTree = clip.toValueTree();
+        clipTree.setProperty ("loop", shared.clipLoop.load(), nullptr);
+        clipTree.setProperty ("sync", shared.clipSyncToHost.load(), nullptr);
+        root.appendChild (clipTree, nullptr);
         root.appendChild (tuning.toValueTree(), nullptr);
 
         juce::ValueTree midiMap (ids::midiMap);
@@ -411,8 +537,22 @@ void NeddPEAudioProcessor::applyStateTree (const juce::ValueTree& root, bool inc
         clearMorphTarget();
     }
 
+    SequencerPattern loadedPattern;
+    loadedPattern.fromValueTree (root.getChildWithName (ids::sequencer));
+    setPattern (loadedPattern);
+    ArpPattern loadedArp;
+    loadedArp.fromValueTree (root.getChildWithName (ids::arpPatternTree));
+    setArpPattern (loadedArp);
+
     if (includePerformanceData)
     {
+        const auto clipTree = root.getChildWithName (ids::clipTree);
+        NoteClip loadedClip;
+        loadedClip.fromValueTree (clipTree);
+        setClip (loadedClip);
+        shared.clipLoop.store ((bool) clipTree.getProperty ("loop", true));
+        shared.clipSyncToHost.store ((bool) clipTree.getProperty ("sync", false));
+
         tuning.fromValueTree (root.getChildWithName (ids::tuningTree));
         publishTuning();
 

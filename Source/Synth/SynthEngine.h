@@ -31,6 +31,7 @@ public:
                   const TransportInfo& transport) noexcept;
 
     const VoiceManager& getVoiceManager() const noexcept { return voiceManager; }
+    const ClipTransport& getClipTransport() const noexcept { return clipTransport; }
     const MpeInputProcessor& getMpeInput() const noexcept { return mpeInput; }
     const std::array<float, (size_t) kNumModDests>& getGlobalDestMods() const noexcept { return globalDest; }
     double getSampleRate() const noexcept { return sampleRate; }
@@ -42,6 +43,9 @@ private:
     void processChunk (juce::AudioBuffer<float>& buffer, int bufferStart, const juce::MidiBuffer& midi,
                        const ParamSnapshot& params, const TransportInfo& transport) noexcept;
     void collectInput (const juce::MidiBuffer& midi, int chunkStart, int numSamples, bool includeUi) noexcept;
+    void handleClipCommands() noexcept;
+    void recordLiveEvents (const TransportInfo& transport) noexcept;
+    void generateNotes (const ParamSnapshot& p, const TransportInfo& transport, int bufferStart) noexcept;
     void applyEvent (const NoteEvent& e) noexcept;
     void renderVoices (int start, int num) noexcept;
     void evaluateGlobalModulation (const TransportInfo& transport, int numSamples) noexcept;
@@ -70,6 +74,19 @@ private:
     juce::AudioBuffer<float> mainBus, delayBus, reverbBus;
     juce::SmoothedValue<float> masterGain;
     fx::EffectsChain effects;
+
+    // Note generators
+    StepSequencer sequencer;
+    Arpeggiator arpeggiator;
+    ClipPlayer clipPlayer;
+    ClipTransport clipTransport;
+    MpeMidiOutput midiOutput;
+    juce::MidiBuffer midiOut;
+    dsp::Random32 generatorRandom;
+    SequencerPattern defaultPattern;
+    ArpPattern defaultArpPattern;
+    bool arpWasOn = false;
+    bool midiOutWasOn = false;
     fx::Limiter limiter;
     ParamSnapshot effectParams;   // morphed copy of the global parameters when A/B morph is active
 

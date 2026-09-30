@@ -59,6 +59,24 @@ int renderUiSnapshots (const juce::File& directory)
     set (pid::osc (2, OscField::On), 1.0f);
     set (pid::osc (2, OscField::Engine), (float) OscEngine::FM);
 
+    // A short expressive clip so the note editor has something to show.
+    NoteClip clip;
+    clip.lengthBeats = 8.0;
+    const int notes[] = { 60, 63, 67, 70, 72, 67 };
+    for (int i = 0; i < 6; ++i)
+    {
+        ClipNote n;
+        n.noteNumber = notes[i];
+        n.start = i * 1.25;
+        n.length = 1.1 + 0.3 * (i % 2);
+        n.velocity = 0.5f + 0.08f * (float) i;
+        n.pressure = { { 0.0f, 0.1f }, { 0.4f, 0.8f }, { (float) n.length, 0.3f } };
+        n.slide = { { 0.0f, 0.2f }, { (float) n.length, 0.9f } };
+        if (i == 2) n.pitch = { { 0.0f, 0.0f }, { 0.5f, 0.0f }, { 1.0f, 2.0f } };
+        clip.addNote (n);
+    }
+    processor->setClip (clip);
+
     editor->setVisible (true);
 
     bool first = true;

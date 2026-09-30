@@ -31,6 +31,7 @@ void SynthEngine::prepare (double newSampleRate, int maxBlockSize)
     voiceManager.prepare ((float) sampleRate);
     limiter.prepare ((float) sampleRate);
     effects.prepare ((float) sampleRate, maxBlock);
+    midiOut.ensureSize (32768);
     masterGain.reset (sampleRate, 0.03);
 
     ctx.sampleRate = (float) sampleRate;
@@ -46,6 +47,11 @@ void SynthEngine::reset()
     mpeInput.reset();
     limiter.reset();
     effects.reset();
+    sequencer.reset();
+    arpeggiator.reset();
+    clipPlayer.reset();
+    midiOutput.reset();
+    midiOut.clear();
     globalDest.fill (0.0f);
     ctx.globalSources.fill (0.0f);
 }
@@ -164,6 +170,123 @@ void SynthEngine::applyEvent (const NoteEvent& e) noexcept
     }
 }
 
+void SynthEngine::handleClipCommands() noexcept
+{
+    const auto command = (ClipCommand) shared.clipCommand.exchange ((int) ClipCommand::None);
+    switch (command)
+    {
+        case ClipCommand::Play:
+            if (! clipTransport.playing)
+                clipTransport.position = 0.0;
+            clipTransport.playing = true;
+            clipTransport.recording = false;
+            break;
+        case ClipCommand::Stop:
+            clipTransport.playing = false;
+            clipTransport.recording = false;
+            break;
+        case ClipCommand::Record:
+            if (! clipTransport.playing)
+                clipTransport.position = 0.0;
+            clipTransport.playing = true;
+            clipTransport.recording = true;
+            break;
+        case ClipCommand::None:
+            break;
+    }
+    clipTransport.loop = shared.clipLoop.load (std::memory_order_relaxed);
+    clipTransport.syncToHost = shared.clipSyncToHost.load (std::memory_order_relaxed);
+}
+
+void SynthEngine::recordLiveEvents (const TransportInfo& transport) noexcept
+{
+    if (! clipTransport.recording)
+        return;
+
+    const auto* clip = shared.clip.current();
+    const bool looping = clipTransport.loop && clip != nullptr && ! clip->notes.empty();
+    const double length = clip != nullptr ? clip->lengthBeats : 16.0;
+
+    for (const auto& e : inputEvents)
+    {
+        if (e.origin != NoteOrigin::Live)
+            continue;
+
+        RecordedEvent r;
+        r.noteId = e.noteId;
+        r.noteNumber = e.noteNumber;
+        r.value = e.value;
+        r.beat = clipTransport.position + transport.beatsPerSample * e.sampleOffset;
+        if (looping)
+            r.beat = std::fmod (r.beat, length);
+
+        switch (e.type)
+        {
+            case NoteEvent::Type::NoteOn:
+                r.type = RecordedEvent::NoteOn;
+                r.pitch = e.pitch;
+                r.pressure = e.pressure;
+                r.slide = e.slide;
+                break;
+            case NoteEvent::Type::NoteOff:    r.type = RecordedEvent::NoteOff; break;
+            case NoteEvent::Type::Expression: r.type = RecordedEvent::Expression; r.dim = (uint8_t) e.dim; break;
+            case NoteEvent::Type::Global:
+            case NoteEvent::Type::AllNotesOff:
+                continue;
+        }
+        shared.recorded.push (r);
+    }
+}
+
+void SynthEngine::generateNotes (const ParamSnapshot& p, const TransportInfo& transport, int bufferStart) noexcept
+{
+    const auto* pattern = shared.pattern.acquire();
+    const auto* arpPattern = shared.arpPattern.acquire();
+    const auto* clip = shared.clip.acquire();
+
+    voiceEvents.clear();
+
+    // Arpeggiator: live notes become held keys; it emits the notes the voices play.
+    const bool arpOn = p.getBool (pid::arp (ArpField::On));
+    if (arpOn != arpWasOn)
+    {
+        if (arpOn)
+            voiceEvents.add (NoteEvent::allNotesOff (0));   // notes held before the switch would never be released
+        else
+            arpeggiator.releaseAll (0, voiceEvents);
+        arpWasOn = arpOn;
+    }
+
+    if (arpOn)
+        arpeggiator.process (inputEvents, voiceEvents, p, arpPattern != nullptr ? *arpPattern : defaultArpPattern,
+                             globalDest[(size_t) ModDest::ArpGate], globalDest[(size_t) ModDest::ArpProbability],
+                             transport, noteIds, generatorRandom);
+    else
+        for (const auto& e : inputEvents)
+            voiceEvents.add (e);
+
+    // Step sequencer
+    const bool seqRunning = p.getBool (pid::seq (SeqField::On))
+                         && (p.getChoice<SeqClock> (pid::seq (SeqField::Clock)) == SeqClock::FreeRun || transport.hostPlaying);
+    sequencer.process (pattern != nullptr ? *pattern : defaultPattern, p, transport, seqRunning, noteIds, generatorRandom, voiceEvents);
+
+    // Performance clip (note editor / recorder)
+    clipPlayer.process (clip, clipTransport, transport, noteIds, voiceEvents);
+
+    voiceEvents.sortByTime();
+
+    // MPE MIDI out for generated notes
+    const bool midiOutOn = p.getBool (pid::global (GlobalField::MidiOut));
+    constexpr float kOutputBendRange = 48.0f;
+    if (midiOutOn && ! midiOutWasOn)
+        midiOutput.sendConfiguration (midiOut, bufferStart, kOutputBendRange);
+    if (midiOutOn)
+        midiOutput.process (voiceEvents, midiOut, bufferStart, kOutputBendRange);
+    else if (midiOutWasOn)
+        midiOutput.allNotesOff (midiOut, bufferStart);
+    midiOutWasOn = midiOutOn;
+}
+
 void SynthEngine::renderVoices (int start, int num) noexcept
 {
     if (num <= 0)
@@ -270,6 +393,12 @@ void SynthEngine::writeTelemetry() noexcept
     }
 
     t.activeVoices.store (active, std::memory_order_relaxed);
+    t.arpStep.store (arpeggiator.getCurrentStep(), std::memory_order_relaxed);
+    t.arpHeld.store (arpeggiator.getHeldCount(), std::memory_order_relaxed);
+    t.seqStep.store (sequencer.getCurrentStep(), std::memory_order_relaxed);
+    t.clipPosition.store (clipTransport.position, std::memory_order_relaxed);
+    t.clipPlaying.store (clipTransport.playing, std::memory_order_relaxed);
+    t.clipRecording.store (clipTransport.recording, std::memory_order_relaxed);
     const int focus = voiceManager.getFocusVoiceIndex();
     t.focusVoice.store (focus, std::memory_order_relaxed);
 
@@ -308,7 +437,9 @@ void SynthEngine::process (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& m
         processChunk (buffer, start, midi, params, chunkTransport);
     }
 
-    midi.clear();
+    // Replace the host's input MIDI with what NeddPE generated (MPE out), without allocating.
+    midi.swapWith (midiOut);
+    midiOut.clear();
     writeTelemetry();
 }
 
@@ -320,19 +451,20 @@ void SynthEngine::processChunk (juce::AudioBuffer<float>& buffer, int bufferStar
         return;
 
     beginBlock (params, transport);
+    shared.telemetry.ppq.store (transport.ppqAtBlockStart, std::memory_order_relaxed);
+    shared.telemetry.bpm.store (transport.bpm, std::memory_order_relaxed);
+    shared.telemetry.hostPlaying.store (transport.hostPlaying, std::memory_order_relaxed);
 
     mainBus.clear (0, numSamples);
     delayBus.clear (0, numSamples);
     reverbBus.clear (0, numSamples);
 
     collectInput (midi, bufferStart, numSamples, bufferStart == 0);
-
-    voiceEvents.clear();
-    for (const auto& e : inputEvents)
-        voiceEvents.add (e);
-    voiceEvents.sortByTime();
-
     evaluateGlobalModulation (transport, numSamples);
+    if (bufferStart == 0)
+        handleClipCommands();
+    recordLiveEvents (transport);
+    generateNotes (params, transport, bufferStart);
 
     int position = 0;
     for (const auto& e : voiceEvents)

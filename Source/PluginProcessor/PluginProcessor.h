@@ -4,6 +4,7 @@
 #include "Parameters/ParamSnapshot.h"
 #include "Synth/EngineShared.h"
 #include "Synth/SynthEngine.h"
+#include "Sequencer/ClipTools.h"
 
 namespace nedd
 {
@@ -79,6 +80,29 @@ public:
     void swapMorphAB();                             // live patch <-> B
     const ParamSnapshot* getMorphTarget() const noexcept { return morphTarget.get(); }
 
+    // Sequencer, arpeggiator pattern and the performance clip (message thread).
+    // A non-empty undoName makes the change undoable.
+    const SequencerPattern& getPattern() const noexcept { return pattern; }
+    void setPattern (const SequencerPattern& newPattern, const juce::String& undoName = {});
+    const ArpPattern& getArpPattern() const noexcept { return arpPattern; }
+    void setArpPattern (const ArpPattern& newPattern, const juce::String& undoName = {});
+    const NoteClip& getClip() const noexcept { return clip; }
+    void setClip (const NoteClip& newClip, const juce::String& undoName = {});
+    int getClipVersion() const noexcept { return clipVersion; }
+    int getPatternVersion() const noexcept { return patternVersion; }
+
+    // Performance recorder / clip transport
+    void clipPlay();
+    void clipStop();
+    void clipRecord (bool overdub);
+    void setClipLoop (bool loop) { shared.clipLoop.store (loop); }
+    bool getClipLoop() const { return shared.clipLoop.load(); }
+    void setClipSyncToHost (bool sync) { shared.clipSyncToHost.store (sync); }
+    bool getClipSyncToHost() const { return shared.clipSyncToHost.load(); }
+    bool isRecorderActive() const noexcept { return recorder.isActive(); }
+    /** Drains recorded events and finalises a stopped recording (normally called by the timer). */
+    void serviceRecorder();
+
     // MIDI learn (message thread)
     void armMidiLearn (int paramIndex) { learnTarget = paramIndex; }
     int getMidiLearnTarget() const noexcept { return learnTarget; }
@@ -104,6 +128,9 @@ private:
     void publishLfoShapes();
     void publishTuning();
     void publishMorphTarget();
+    void publishPattern();
+    void publishArpPattern();
+    void publishClip();
     TransportInfo readTransport (int numSamples);
 
     juce::UndoManager undoManager { 30000, 30 };
@@ -119,6 +146,13 @@ private:
     TuningData tuning;
     dsp::LfoCustomShapes lfoShapes;
     std::unique_ptr<ParamSnapshot> morphTarget;
+    SequencerPattern pattern;
+    ArpPattern arpPattern;
+    NoteClip clip;
+    PerformanceRecorder recorder;
+    bool recordStopPending = false;
+    bool isPrepared = false;
+    int clipVersion = 0, patternVersion = 0;
 
     std::array<int, 128> ccToParam {};   // -1 = unmapped
     int learnTarget = -1;
