@@ -128,4 +128,9 @@ private:
     std::unique_ptr<Impl> impl;
 };
 
+// Factories for pages whose classes are private to their translation unit
+std::unique_ptr<Page> createLfoPage (EditorContext& ctx);
+std::unique_ptr<Page> createEffectsPage (EditorContext& ctx);
+std::unique_ptr<juce::Component> createEffectsOverview (EditorContext& ctx);
+
 } // namespace nedd::ui

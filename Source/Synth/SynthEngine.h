@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
+#include "Effects/EffectsChain.h"
 #include "Effects/Limiter.h"
 #include "EngineShared.h"
 #include "MPE/MpeInputProcessor.h"
@@ -45,6 +46,7 @@ private:
     void renderVoices (int start, int num) noexcept;
     void evaluateGlobalModulation (const TransportInfo& transport, int numSamples) noexcept;
     void writeTelemetry() noexcept;
+    const ParamSnapshot& morphedEffectParams (const ParamSnapshot& p) noexcept;
 
     EngineShared& shared;
     double sampleRate = 44100.0;
@@ -67,7 +69,9 @@ private:
 
     juce::AudioBuffer<float> mainBus, delayBus, reverbBus;
     juce::SmoothedValue<float> masterGain;
+    fx::EffectsChain effects;
     fx::Limiter limiter;
+    ParamSnapshot effectParams;   // morphed copy of the global parameters when A/B morph is active
 
     const ParamSnapshot* currentParams = nullptr;
 };

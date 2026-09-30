@@ -30,6 +30,7 @@ void SynthEngine::prepare (double newSampleRate, int maxBlockSize)
 
     voiceManager.prepare ((float) sampleRate);
     limiter.prepare ((float) sampleRate);
+    effects.prepare ((float) sampleRate, maxBlock);
     masterGain.reset (sampleRate, 0.03);
 
     ctx.sampleRate = (float) sampleRate;
@@ -44,6 +45,7 @@ void SynthEngine::reset()
     voiceManager.reset();
     mpeInput.reset();
     limiter.reset();
+    effects.reset();
     globalDest.fill (0.0f);
     ctx.globalSources.fill (0.0f);
 }
@@ -230,6 +232,30 @@ void SynthEngine::evaluateGlobalModulation (const TransportInfo& transport, int 
         t.sourceValue[(size_t) s].store (sources[(size_t) s], std::memory_order_relaxed);
 }
 
+const ParamSnapshot& SynthEngine::morphedEffectParams (const ParamSnapshot& p) noexcept
+{
+    if (! morph.enabled)
+        return p;
+
+    // Effects are global: they morph with the base position plus the most recent note's morph modulation.
+    float position = morph.position;
+    const int focus = voiceManager.getFocusVoiceIndex();
+    if (focus >= 0)
+        position += voiceManager.getVoice (focus).getDestMods()[(size_t) ModDest::Morph];
+    position = dsp::clamp01 (position);
+
+    effectParams = p;
+    for (int index : getGlobalMorphParams())
+    {
+        const auto& def = getParamDef (index);
+        if (def.type == ParamType::Float)
+            effectParams[index] = def.range.convertFrom0to1 (dsp::lerp (morph.liveNormalised[(size_t) index], morph.targetNormalised[(size_t) index], position));
+        else if (position >= 0.5f)
+            effectParams[index] = morph.targetPlain[index];
+    }
+    return effectParams;
+}
+
 void SynthEngine::writeTelemetry() noexcept
 {
     auto& t = shared.telemetry;
@@ -318,6 +344,11 @@ void SynthEngine::processChunk (juce::AudioBuffer<float>& buffer, int bufferStar
     }
     renderVoices (position, numSamples - position);
     voiceManager.advanceSampleCounter (numSamples);
+
+    effects.process (mainBus.getWritePointer (0), mainBus.getWritePointer (1),
+                     delayBus.getReadPointer (0), delayBus.getReadPointer (1),
+                     reverbBus.getReadPointer (0), reverbBus.getReadPointer (1), numSamples,
+                     morphedEffectParams (params), globalDest, transport, params.getChoice<Quality> (pid::global (GlobalField::Quality)));
 
     // Master volume and output protection.
     auto* l = mainBus.getWritePointer (0);

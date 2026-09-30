@@ -110,6 +110,8 @@ MainPage::MainPage (EditorContext& c)
     }
     mpe = std::make_unique<MpeQuickCard> (c);
     output = std::make_unique<OutputCard> (c);
+    effects = createEffectsOverview (c);
+    addAndMakeVisible (*effects);
     addAndMakeVisible (filter);
     addAndMakeVisible (ampEnv);
     addAndMakeVisible (*mpe);

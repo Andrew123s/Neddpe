@@ -15,8 +15,10 @@ NeddPEEditor::NeddPEEditor (NeddPEAudioProcessor& p)
         { (int) PageId::Oscillators, "OSCILLATORS" },
         { (int) PageId::Filter, "FILTER" },
         { (int) PageId::Envelopes, "ENVELOPES" },
+        { (int) PageId::Lfo, "LFO" },
         { (int) PageId::Mpe, "MPE" },
         { (int) PageId::Matrix, "MOD MATRIX" },
+        { (int) PageId::Effects, "EFFECTS" },
         { (int) PageId::Settings, "SETTINGS" },
     };
 
@@ -67,8 +69,8 @@ std::unique_ptr<Page> NeddPEEditor::createPage (int id)
         case PageId::Mpe:         return std::make_unique<MpePage> (ctx);
         case PageId::Matrix:      return std::make_unique<MatrixPage> (ctx);
         case PageId::Settings:    return std::make_unique<SettingsPage> (ctx, [this] (float s) { setUiScale (s); });
-        case PageId::Lfo:
-        case PageId::Effects:
+        case PageId::Lfo:         return createLfoPage (ctx);
+        case PageId::Effects:     return createEffectsPage (ctx);
         case PageId::Arp:
         case PageId::Sequencer:
         case PageId::NoteEditor:
