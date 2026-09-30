@@ -138,7 +138,7 @@ public:
     float getPhase() const noexcept { return phase; }
 
 private:
-    static float wrap (float x) noexcept { return x - std::floor (x); }
+    static float wrap (float x) noexcept { return wrapPhase (x); }
 
     void onWrap() noexcept
     {

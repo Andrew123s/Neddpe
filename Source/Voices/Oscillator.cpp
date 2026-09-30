@@ -7,7 +7,7 @@ namespace
     constexpr float kGoldenRatioFraction = 0.61803398875f;
     constexpr float kMaxUnisonCents = 50.0f;
 
-    inline float wrap01 (float x) noexcept { return x - std::floor (x); }
+    inline float wrap01 (float x) noexcept { return dsp::wrapPhase (x); }
 }
 
 void Oscillator::noteOn (float newStartPhase, float phaseRandom, dsp::Random32& rng) noexcept

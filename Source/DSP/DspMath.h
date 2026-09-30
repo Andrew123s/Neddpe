@@ -13,6 +13,14 @@ constexpr float kTwoPi = 2.0f * kPi;
 constexpr float kHalfPi = 0.5f * kPi;
 
 inline float clamp01 (float x) noexcept { return std::clamp (x, 0.0f, 1.0f); }
+
+/** Wraps a phase into [0, 1). Truncation instead of std::floor: floor is a library call on
+    baseline x64 and this runs several times per sample per oscillator. Valid for |x| < 2^31. */
+inline float wrapPhase (float x) noexcept
+{
+    const float t = x - (float) (int) x;
+    return t < 0.0f ? t + 1.0f : t;
+}
 inline float clampBipolar (float x) noexcept { return std::clamp (x, -1.0f, 1.0f); }
 inline float lerp (float a, float b, float t) noexcept { return a + (b - a) * t; }
 
@@ -103,7 +111,7 @@ struct SineTable
     /** phase in cycles, any value (wrapped internally). */
     float operator() (float phase) const noexcept
     {
-        phase -= std::floor (phase);
+        phase = wrapPhase (phase);
         const float pos = phase * (float) kSize;
         const int index = std::min ((int) pos, kSize - 1);
         const float frac = pos - (float) index;

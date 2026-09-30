@@ -123,6 +123,9 @@ void NeddPEEditor::paint (juce::Graphics& g)
 
 void NeddPEEditor::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0)
+        return;   // called during construction, before setSize()
+
     const float scale = (float) getWidth() / (float) metrics::designWidth;
     root.setTransform (juce::AffineTransform::scale (scale));
     root.setBounds (0, 0, metrics::designWidth, metrics::designHeight);

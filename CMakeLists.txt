@@ -102,7 +102,8 @@ if(NEDDPE_BUILD_TESTS)
     juce_add_console_app(NeddPETests PRODUCT_NAME "NeddPETests")
     target_sources(NeddPETests PRIVATE ${NEDDPE_CORE_SOURCES} ${NEDDPE_TEST_SOURCES})
     target_include_directories(NeddPETests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
-    target_compile_definitions(NeddPETests PRIVATE ${NEDDPE_COMMON_DEFINITIONS} NEDDPE_TESTS=1)
+    # The test app can also host the built VST3 (--validate-vst3) to check it the way a DAW does.
+    target_compile_definitions(NeddPETests PRIVATE ${NEDDPE_COMMON_DEFINITIONS} NEDDPE_TESTS=1 JUCE_PLUGINHOST_VST3=1 JUCE_LOG_ASSERTIONS=1)
     target_link_libraries(NeddPETests
         PRIVATE ${NEDDPE_JUCE_MODULES}
                 juce::juce_recommended_config_flags
