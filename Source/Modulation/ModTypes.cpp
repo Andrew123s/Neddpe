@@ -84,6 +84,8 @@ namespace
         { "Reverb Return",      ModScope::Global, 1.0f,  "" },
         { "Arp Gate",           ModScope::Global, 1.0f,  "" },
         { "Arp Probability",    ModScope::Global, 1.0f,  "" },
+        { "Grain Size",         ModScope::Voice,  3.0f,  "oct" },
+        { "Grain Density",      ModScope::Voice,  3.0f,  "oct" },
     } };
 } // namespace
 

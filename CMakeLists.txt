@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NeddPE VERSION 0.1.0 LANGUAGES C CXX)
+project(NeddPE VERSION 0.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Static MSVC runtime: the plugin and the standalone app run on machines without the Visual C++ redistributable.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 option(NEDDPE_BUILD_TESTS "Build the NeddPETests console application" ON)
 option(NEDDPE_BUILD_STANDALONE "Also build a Standalone application" ON)

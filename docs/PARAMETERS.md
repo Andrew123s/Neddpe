@@ -6,7 +6,7 @@ Generated from `Source/Parameters/ParameterDefs.cpp` by `NeddPETests --dump-para
 - **Auto**: automatable by the host. Matrix routing choices are deliberately not automatable.
 - **Morph**: included in A/B morphing and mutation. **Scope**: `voice` parameters are evaluated per note.
 
-Total: 338 parameters.
+Total: 357 parameters.
 
 ## Oscillators
 
@@ -15,10 +15,10 @@ Shown for OSC 1 (`osc1_`); OSC 2 and 3 use `osc2_` / `osc3_`.
 | ID | Name | Type | Range | Default | Auto | Morph | Scope |
 |---|---|---|---|---|---|---|---|
 | `osc1_on` | OSC 1 On | bool | off / on | On | yes | yes | voice |
-| `osc1_engine` | OSC 1 Engine | choice | Analog / Wavetable / FM / Noise | Analog | yes | yes | voice |
+| `osc1_engine` | OSC 1 Engine | choice | Analog / Wavetable / FM / Noise / Granular / Sample | Analog | yes | yes | voice |
 | `osc1_wave` | OSC 1 Waveform | choice | Sine / Triangle / Saw / Square / Pulse | Saw | yes | yes | voice |
 | `osc1_pw` | OSC 1 Pulse Width | float | 2% .. 98% | 50% | yes | yes | voice |
-| `osc1_table` | OSC 1 Wavetable | choice | Basic Shapes / PWM / Harmonic Sweep / Formant Vowels / Growl / Sync Sweep / Digital Steps / Glass / Drawbars / Sine Fold | Basic Shapes | yes | yes | voice |
+| `osc1_table` | OSC 1 Wavetable | choice | Basic Shapes / PWM / Harmonic Sweep / Formant Vowels / Growl / Sync Sweep / Digital Steps / Glass / Drawbars / Sine Fold / Imported | Basic Shapes | yes | yes | voice |
 | `osc1_wtpos` | OSC 1 WT Position | float | 0% .. 100% | 0% | yes | yes | voice |
 | `osc1_octave` | OSC 1 Octave | int | -4 oct .. +4 oct | 0 oct | yes | yes | voice |
 | `osc1_semi` | OSC 1 Semitone | int | -12 st .. +12 st | 0 st | yes | yes | voice |
@@ -45,6 +45,12 @@ Shown for OSC 1 (`osc1_`); OSC 2 and 3 use `osc2_` / `osc3_`.
 | `osc1_fmfb` | OSC 1 FM Feedback | float | 0% .. 100% | 0% | yes | yes | voice |
 | `osc1_fmenv` | OSC 1 FM Env Amount | float | 0% .. 100% | 0% | yes | yes | voice |
 | `osc1_fmkt` | OSC 1 FM Key Track | float | 0% .. 100% | 0% | yes | yes | voice |
+| `osc1_root` | OSC 1 Sample Root Key | int | C-1 .. G9 | C4 | yes | yes | voice |
+| `osc1_loop` | OSC 1 Sample Loop | bool | off / on | On | yes | yes | voice |
+| `osc1_gsize` | OSC 1 Grain Size | float | 5.0 ms .. 1.00 s | 80 ms | yes | yes | voice |
+| `osc1_gdensity` | OSC 1 Grain Density | float | 1.0 /s .. 200 /s | 30 /s | yes | yes | voice |
+| `osc1_gspray` | OSC 1 Grain Position Spray | float | 0% .. 100% | 10% | yes | yes | voice |
+| `osc1_gpitch` | OSC 1 Grain Pitch Spray | float | 0.0 st .. 12.0 st | 0.0 st | yes | yes | voice |
 
 ## Filter
 
@@ -107,7 +113,7 @@ Shown for slot 1 (`mod1_`); slots 2-16 use `mod2_` ... `mod16_`.
 | ID | Name | Type | Range | Default | Auto | Morph | Scope |
 |---|---|---|---|---|---|---|---|
 | `mod1_src` | Mod 1 Source | choice | None / MPE Pitch / MPE Pressure / MPE Slide / Velocity / Release Velocity / Mod Wheel / Pitch Bend / Aftertouch / LFO 1 / LFO 2 / LFO 3 / Amp Env / Filter Env / Mod Env / Random / Sample & Hold / Key Position / Note Number / Gate / Macro 1 / Macro 2 / Macro 3 / Macro 4 | MPE Pitch | no |  | global |
-| `mod1_dst` | Mod 1 Destination | choice | None / Pitch / OSC 1 Pitch / OSC 2 Pitch / OSC 3 Pitch / OSC 1 WT Position / OSC 2 WT Position / OSC 3 WT Position / OSC 1 FM Amount / OSC 2 FM Amount / OSC 3 FM Amount / OSC 1 Pulse Width / OSC 2 Pulse Width / OSC 3 Pulse Width / OSC 1 Level / OSC 2 Level / OSC 3 Level / Unison Detune / Stereo Width / Filter Cutoff / Filter Resonance / Filter Drive / Filter Env Amount / Filter Mix / Amp Level / Pan / Amp Attack / Amp Decay / Amp Release / LFO 1 Rate / LFO 2 Rate / LFO 3 Rate / LFO 1 Depth / LFO 2 Depth / LFO 3 Depth / Delay Send / Reverb Send / Morph A/B / Distortion Drive / Distortion Mix / Saturation Drive / Bitcrush Amount / Chorus Mix / Phaser Mix / Flanger Mix / Delay Feedback / Delay Return / Reverb Size / Reverb Return / Arp Gate / Arp Probability | Pitch | no |  | global |
+| `mod1_dst` | Mod 1 Destination | choice | None / Pitch / OSC 1 Pitch / OSC 2 Pitch / OSC 3 Pitch / OSC 1 WT Position / OSC 2 WT Position / OSC 3 WT Position / OSC 1 FM Amount / OSC 2 FM Amount / OSC 3 FM Amount / OSC 1 Pulse Width / OSC 2 Pulse Width / OSC 3 Pulse Width / OSC 1 Level / OSC 2 Level / OSC 3 Level / Unison Detune / Stereo Width / Filter Cutoff / Filter Resonance / Filter Drive / Filter Env Amount / Filter Mix / Amp Level / Pan / Amp Attack / Amp Decay / Amp Release / LFO 1 Rate / LFO 2 Rate / LFO 3 Rate / LFO 1 Depth / LFO 2 Depth / LFO 3 Depth / Delay Send / Reverb Send / Morph A/B / Distortion Drive / Distortion Mix / Saturation Drive / Bitcrush Amount / Chorus Mix / Phaser Mix / Flanger Mix / Delay Feedback / Delay Return / Reverb Size / Reverb Return / Arp Gate / Arp Probability / Grain Size / Grain Density | Pitch | no |  | global |
 | `mod1_amt` | Mod 1 Amount | float | -100% .. +100% | +100% | yes |  | global |
 | `mod1_curve` | Mod 1 Curve | choice | Linear / Exponential / Logarithmic / S-Curve / Stepped | Linear | no |  | global |
 | `mod1_pol` | Mod 1 Polarity | choice | Unipolar / Bipolar | Bipolar | no |  | global |
@@ -179,6 +185,7 @@ Shown for LFO 1 (`lfo1_`); LFO 2 and 3 use `lfo2_` / `lfo3_`.
 | ID | Name | Type | Range | Default | Auto | Morph | Scope |
 |---|---|---|---|---|---|---|---|
 | `midi_out` | MPE MIDI Out | bool | off / on | Off | yes |  | global |
+| `osc_oversampling` | Oscillator Oversampling | choice | Off / Auto / 2x / 4x | Auto | yes |  | global |
 
 ## Effects
 
@@ -352,3 +359,5 @@ Shown for LFO 1 (`lfo1_`); LFO 2 and 3 use `lfo2_` / `lfo3_`.
 | 48 | Reverb Return | 1  | global |
 | 49 | Arp Gate | 1  | global |
 | 50 | Arp Probability | 1  | global |
+| 51 | Grain Size | 3 oct | per note |
+| 52 | Grain Density | 3 oct | per note |

@@ -98,6 +98,17 @@ public:
     void swapMorphAB();                             // live patch <-> B
     const ParamSnapshot* getMorphTarget() const noexcept { return morphTarget.get(); }
 
+    // Imported oscillator content (message thread). Imports and removals are undoable.
+    const OscillatorAssets& getOscillatorAssets() const noexcept { return oscAssets; }
+    int getAssetsVersion() const noexcept { return assetsVersion; }
+    /** Loads an audio file as the sample of an oscillator and switches it to the Granular engine
+        unless it already uses Sample or Granular. Returns an error message, empty on success. */
+    juce::String importSample (int osc, const juce::File& file);
+    /** Loads a wavetable file into an oscillator and selects it ("Imported", Wavetable engine). */
+    juce::String importWavetable (int osc, const juce::File& file);
+    void removeSample (int osc);
+    void removeWavetable (int osc);
+
     // Sequencer, arpeggiator pattern and the performance clip (message thread).
     // A non-empty undoName makes the change undoable.
     const SequencerPattern& getPattern() const noexcept { return pattern; }
@@ -171,6 +182,9 @@ private:
     void publishPattern();
     void publishArpPattern();
     void publishClip();
+    void publishAssets();
+    void setAssets (const OscillatorAssets& newAssets, const juce::String& undoName,
+                    const std::vector<std::pair<int, float>>& paramChanges = {});
     TransportInfo readTransport (int numSamples);
 
     juce::UndoManager undoManager { 5000, 30 };
@@ -189,6 +203,8 @@ private:
     SequencerPattern pattern;
     ArpPattern arpPattern;
     NoteClip clip;
+    OscillatorAssets oscAssets;
+    int assetsVersion = 0;
     PerformanceRecorder recorder;
     bool recordStopPending = false;
     bool isPrepared = false;

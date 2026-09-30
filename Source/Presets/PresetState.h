@@ -3,12 +3,14 @@
 #include "DSP/Lfo.h"
 #include "Parameters/ParamSnapshot.h"
 #include "Sequencer/SequencerData.h"
+#include "Synth/OscillatorAssets.h"
 
 namespace nedd
 {
 /**
     Everything that defines a sound: all parameters plus the structured sound data
-    (macro names, LFO curves, sequencer and arp patterns, the morph B target).
+    (macro names, LFO curves, sequencer and arp patterns, the morph B target, and the
+    wavetables and samples imported into the oscillators).
 
     This is the single serialisation path: presets, DAW project state and undo all go
     through toValueTree() / fromValueTree(). Missing values fall back to defaults, so older
@@ -28,6 +30,7 @@ struct PresetState
     ArpPattern arpPattern;
     bool hasMorphTarget = false;
     ParamSnapshot morphTarget;
+    OscillatorAssets assets;
 
     PresetState()
     {

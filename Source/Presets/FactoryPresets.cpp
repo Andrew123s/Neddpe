@@ -48,6 +48,15 @@ namespace
             return tune (o, level, octave, 0, 0.0f);
         }
 
+        /** Granular engine on the oscillator's sample (the built-in source unless one is imported). */
+        Build& granular (int o, float position, float size, float density, float spray, float pitchSpray, float level, int octave = 0)
+        {
+            osc (o, OscField::On, 1.0f).osc (o, OscField::Engine, (float) OscEngine::Granular).osc (o, OscField::WtPos, position)
+                .osc (o, OscField::GrainSize, size).osc (o, OscField::GrainDensity, density)
+                .osc (o, OscField::GrainSpray, spray).osc (o, OscField::GrainPitchSpray, pitchSpray);
+            return tune (o, level, octave, 0, 0.0f);
+        }
+
         Build& noise (int o, NoiseType type, float level, float spread = 0.6f)
         {
             osc (o, OscField::On, 1.0f).osc (o, OscField::Engine, (float) OscEngine::Noise).osc (o, OscField::NoiseType, (float) type)
@@ -440,6 +449,24 @@ namespace
                 .env (pid::ampEnv, 1.5f, 2.0f, 0.9f, 3.0f).env (pid::filterEnv, 3.0f, 3.0f, 0.8f, 2.5f, 0.0f)
                 .route (S::MpePressure, D::ReverbSend, 0.6f).route (S::MpePressure, D::FilterCutoff, 0.25f).route (S::MpeSlide, D::StereoWidth, 0.4f)
                 .macros (D::FilterEnvAmount, 0.4f, "SWELL").reverb (0.9f, 0.3f, 0.7f).amp (0.5f, 0.3f); } });
+
+        p.push_back ({ "Grain Choir", "Atmospheric", "Granular vowels: slide moves each note through the source, pressure thickens the cloud.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.35f, 0.12f, 24.0f, 0.2f, 0.05f, 0.8f).osc (0, OscField::Spread, 0.8f)
+                .filter (F::LowPass12, 7000.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.6f, 1.5f, 0.9f, 2.5f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.5f).route (S::MpePressure, D::GrainDensity, 0.5f)
+                .route (S::Lfo1, D::Osc1WtPos, 0.08f).lfo (0, LfoShape::SmoothRandom, 0.3f, 1.0f, false)
+                .macros (D::GrainSize, 0.6f, "GRAIN").reverb (0.85f, 0.5f, 0.6f).amp (0.55f, 0.3f); } });
+
+        p.push_back ({ "Frozen Shimmer", "Experimental", "Long, pitch-scattered grains an octave up; pressure sprays them further.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.6f, 0.4f, 40.0f, 0.1f, 0.3f, 0.7f, 1).osc (0, OscField::Spread, 1.0f)
+                .granular (1, 0.2f, 0.25f, 12.0f, 0.4f, 0.0f, 0.4f, -1)
+                .filter (F::HighPass12, 180.0f, 0.1f, 0.0f, 0.0f)
+                .env (pid::ampEnv, 1.2f, 2.0f, 1.0f, 3.5f)
+                .route (S::MpePressure, D::GrainSize, -0.4f).route (S::MpeSlide, D::Osc1WtPos, 0.4f).route (S::MpeSlide, D::Osc2WtPos, -0.3f)
+                .macros (D::GrainDensity, 0.5f, "DENSITY").delay ("1/4.", 0.5f, 0.35f).reverb (0.95f, 0.6f, 0.7f).amp (0.5f, 0.2f); } });
 
         // ------------------------------------------------------------------ EXPERIMENTAL
         p.push_back ({ "Glitch Ratchet", "Experimental", "Random ratcheting arp through a crusher; S&H jumps the filter.",

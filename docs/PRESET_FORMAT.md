@@ -36,6 +36,12 @@ binary-XML form by the host).
   </Sequencer>
   <ArpPattern steps="0 1 2 1 0 2 3 -1 0 1 2 3 4 3 2 1"/>
   <MorphB osc1_wtpos="0.9" flt_cutoff="6500" ... />          (optional: morph target B, morphable params only)
+  <Assets>                                                    (optional: imported oscillator content)
+    <Slot index="0">
+      <Wavetable name="MyTable" frames="64" encoding="flac" data="(base64)"/>
+      <Sample name="Choir" rate="44100" channels="2" length="352800" encoding="flac" data="(base64)"/>
+    </Slot>
+  </Assets>
 
   <!-- project only -->
   <Clip length="16" loop="1" sync="0">
@@ -64,6 +70,11 @@ The root element also carries `editorScale` in project state.
   slide 0..1, linearly interpolated.
 - `ArpPattern` steps: `-1` is a rest, otherwise an index into the held notes sorted by pitch (indices above the
   number of held notes continue into higher octaves).
+- `Assets`: one `Slot` per oscillator that has imported content. `data` is the audio encoded as base64:
+  `encoding="flac"` is a 24-bit FLAC stream, `encoding="f32"` raw 32-bit floats channel after channel (used when
+  the audio goes beyond full scale). Wavetables are mono, `frames` x 2048 samples. Samples keep their original rate;
+  `length` is in sample frames. A preset with imported audio is self-contained (and correspondingly larger: roughly
+  the size of a FLAC file of the audio).
 
 ## Versioning
 

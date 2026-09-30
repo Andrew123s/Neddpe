@@ -55,7 +55,12 @@ NeddPETests.exe --bench
 ```
 
 16 simultaneous MPE notes with moving slide, 48 kHz, 256-sample blocks, 10 s, single core (Release, measured on the
-development machine):
+development machine).
+
+**These numbers are from version 0.1, before SIMD unison rendering and oscillator oversampling were added; version
+0.2 has not been benchmarked yet.** Run `--bench` to measure it. Expect the analog and FM rows to drop (their
+unison is now rendered four sub-voices at a time) and patches using cross-FM, ring modulation or sync to cost more
+in the default *Auto* oversampling mode (their oscillators run at 2x).
 
 | Patch | Eco | Normal | High | Ultra |
 |---|---|---|---|---|
@@ -66,8 +71,8 @@ development machine):
 Through the VST3 wrapper, three notes of the default patch render 10 s of audio in about 0.1 s (~1% of real time).
 
 The dominant cost is the per-sample voice loop (about 0.5% of a core per voice for three oscillators and a ladder
-filter). The planned optimisation is block-based, SIMD-across-voices rendering; the control-rate work is already
-small (the Eco-to-Ultra spread above).
+filter in 0.1). Version 0.2 renders unison sub-voices of the analog and FM engines four at a time with SIMD; the
+control-rate work is already small (the Eco-to-Ultra spread above).
 
 ## Documentation generators
 

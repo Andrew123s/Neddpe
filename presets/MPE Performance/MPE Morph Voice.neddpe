@@ -34,6 +34,12 @@
     <PARAM id="osc1_fmfb" value="0.0"/>
     <PARAM id="osc1_fmenv" value="0.0"/>
     <PARAM id="osc1_fmkt" value="0.0"/>
+    <PARAM id="osc1_root" value="60.0"/>
+    <PARAM id="osc1_loop" value="1.0"/>
+    <PARAM id="osc1_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc1_gdensity" value="30.0"/>
+    <PARAM id="osc1_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc1_gpitch" value="0.0"/>
     <PARAM id="osc2_on" value="1.0"/>
     <PARAM id="osc2_engine" value="0.0"/>
     <PARAM id="osc2_wave" value="1.0"/>
@@ -65,6 +71,12 @@
     <PARAM id="osc2_fmfb" value="0.0"/>
     <PARAM id="osc2_fmenv" value="0.0"/>
     <PARAM id="osc2_fmkt" value="0.0"/>
+    <PARAM id="osc2_root" value="60.0"/>
+    <PARAM id="osc2_loop" value="1.0"/>
+    <PARAM id="osc2_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc2_gdensity" value="30.0"/>
+    <PARAM id="osc2_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc2_gpitch" value="0.0"/>
     <PARAM id="osc3_on" value="0.0"/>
     <PARAM id="osc3_engine" value="0.0"/>
     <PARAM id="osc3_wave" value="2.0"/>
@@ -96,6 +108,12 @@
     <PARAM id="osc3_fmfb" value="0.0"/>
     <PARAM id="osc3_fmenv" value="0.0"/>
     <PARAM id="osc3_fmkt" value="0.0"/>
+    <PARAM id="osc3_root" value="60.0"/>
+    <PARAM id="osc3_loop" value="1.0"/>
+    <PARAM id="osc3_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc3_gdensity" value="30.0"/>
+    <PARAM id="osc3_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc3_gpitch" value="0.0"/>
     <PARAM id="flt_on" value="1.0"/>
     <PARAM id="flt_type" value="1.0"/>
     <PARAM id="flt_cutoff" value="900.0"/>
@@ -266,6 +284,7 @@
     <PARAM id="morph_on" value="1.0"/>
     <PARAM id="morph_pos" value="0.0"/>
     <PARAM id="midi_out" value="0.0"/>
+    <PARAM id="osc_oversampling" value="1.0"/>
     <PARAM id="dist_on" value="0.0"/>
     <PARAM id="dist_type" value="0.0"/>
     <PARAM id="dist_drive" value="0.300000011920929"/>
@@ -461,6 +480,8 @@
           osc1_route="0.0" osc1_noise="0.0" osc1_fmalgo="0.0" osc1_op1ratio="3.0"
           osc1_op2ratio="2.0" osc1_opfine="0.0" osc1_op1amt="0.3499999940395355"
           osc1_op2amt="0.0" osc1_fmfb="0.0" osc1_fmenv="0.0" osc1_fmkt="0.0"
+          osc1_root="60.0" osc1_loop="1.0" osc1_gsize="0.07999999821186066"
+          osc1_gdensity="30.0" osc1_gspray="0.1000000014901161" osc1_gpitch="0.0"
           osc2_on="1.0" osc2_engine="0.0" osc2_wave="2.0" osc2_pw="0.5"
           osc2_table="0.0" osc2_wtpos="0.0" osc2_octave="0.0" osc2_semi="0.0"
           osc2_fine="0.0" osc2_phase="0.0" osc2_phrand="0.0" osc2_level="0.4000000059604645"
@@ -469,19 +490,22 @@
           osc2_sync="0.0" osc2_ring="0.0" osc2_route="0.0" osc2_noise="0.0"
           osc2_fmalgo="0.0" osc2_op1ratio="3.0" osc2_op2ratio="2.0" osc2_opfine="0.0"
           osc2_op1amt="0.3499999940395355" osc2_op2amt="0.0" osc2_fmfb="0.0"
-          osc2_fmenv="0.0" osc2_fmkt="0.0" osc3_on="0.0" osc3_engine="0.0"
-          osc3_wave="2.0" osc3_pw="0.5" osc3_table="0.0" osc3_wtpos="0.0"
-          osc3_octave="0.0" osc3_semi="0.0" osc3_fine="0.0" osc3_phase="0.0"
-          osc3_phrand="0.0" osc3_level="0.75" osc3_pan="0.0" osc3_unison="1.0"
-          osc3_detune="0.2000000029802322" osc3_spread="0.6000000238418579"
-          osc3_fmsrc="1.0" osc3_fm="0.0" osc3_sync="0.0" osc3_ring="0.0"
-          osc3_route="0.0" osc3_noise="0.0" osc3_fmalgo="0.0" osc3_op1ratio="3.0"
-          osc3_op2ratio="2.0" osc3_opfine="0.0" osc3_op1amt="0.3499999940395355"
-          osc3_op2amt="0.0" osc3_fmfb="0.0" osc3_fmenv="0.0" osc3_fmkt="0.0"
-          flt_on="1.0" flt_type="1.0" flt_cutoff="6500.0" flt_reso="0.449999988079071"
-          flt_drive="0.5" flt_keytrack="0.300000011920929" flt_env="0.1000000014901161"
-          flt_vel="0.300000011920929" flt_mix="1.0" amp_level="0.550000011920929"
-          amp_vel="0.300000011920929" amp_pressure="0.300000011920929"
+          osc2_fmenv="0.0" osc2_fmkt="0.0" osc2_root="60.0" osc2_loop="1.0"
+          osc2_gsize="0.07999999821186066" osc2_gdensity="30.0" osc2_gspray="0.1000000014901161"
+          osc2_gpitch="0.0" osc3_on="0.0" osc3_engine="0.0" osc3_wave="2.0"
+          osc3_pw="0.5" osc3_table="0.0" osc3_wtpos="0.0" osc3_octave="0.0"
+          osc3_semi="0.0" osc3_fine="0.0" osc3_phase="0.0" osc3_phrand="0.0"
+          osc3_level="0.75" osc3_pan="0.0" osc3_unison="1.0" osc3_detune="0.2000000029802322"
+          osc3_spread="0.6000000238418579" osc3_fmsrc="1.0" osc3_fm="0.0"
+          osc3_sync="0.0" osc3_ring="0.0" osc3_route="0.0" osc3_noise="0.0"
+          osc3_fmalgo="0.0" osc3_op1ratio="3.0" osc3_op2ratio="2.0" osc3_opfine="0.0"
+          osc3_op1amt="0.3499999940395355" osc3_op2amt="0.0" osc3_fmfb="0.0"
+          osc3_fmenv="0.0" osc3_fmkt="0.0" osc3_root="60.0" osc3_loop="1.0"
+          osc3_gsize="0.07999999821186066" osc3_gdensity="30.0" osc3_gspray="0.1000000014901161"
+          osc3_gpitch="0.0" flt_on="1.0" flt_type="1.0" flt_cutoff="6500.0"
+          flt_reso="0.449999988079071" flt_drive="0.5" flt_keytrack="0.300000011920929"
+          flt_env="0.1000000014901161" flt_vel="0.300000011920929" flt_mix="1.0"
+          amp_level="0.550000011920929" amp_vel="0.300000011920929" amp_pressure="0.300000011920929"
           amp_pan="0.0" aenv_delay="0.0" aenv_attack="0.004999999888241291"
           aenv_hold="0.0" aenv_decay="0.800000011920929" aenv_sustain="0.8500000238418579"
           aenv_release="0.800000011920929" aenv_acurve="0.2000000029802322"

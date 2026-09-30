@@ -7,7 +7,14 @@ namespace nedd
 // ---------------------------------------------------------------------------------------------
 // Choice lists (append only)
 // ---------------------------------------------------------------------------------------------
-juce::StringArray getOscEngineNames() { return { "Analog", "Wavetable", "FM", "Noise" }; }
+juce::StringArray getOscEngineNames() { return { "Analog", "Wavetable", "FM", "Noise", "Granular", "Sample" }; }
+
+juce::StringArray getWavetableChoiceNames()
+{
+    auto names = getWavetableNames();
+    names.add ("Imported");
+    return names;
+}
 juce::StringArray getAnalogWaveNames() { return { "Sine", "Triangle", "Saw", "Square", "Pulse" }; }
 juce::StringArray getNoiseTypeNames() { return { "White", "Pink", "Brown", "Crackle", "Digital" }; }
 juce::StringArray getFmAlgorithmNames() { return { "Stack 2>1>C", "Parallel 1+2>C", "Branch 2>1+C" }; }
@@ -167,7 +174,7 @@ namespace
             sound (b.choice (i (OscField::Engine), p + "engine", n + "Engine", G, getOscEngineNames(), (int) OscEngine::Analog), true);
             sound (b.choice (i (OscField::Wave), p + "wave", n + "Waveform", G, getAnalogWaveNames(), (int) AnalogWave::Saw), true);
             sound (b.real (i (OscField::PulseWidth), p + "pw", n + "Pulse Width", G, 0.02f, 0.98f, 0.5f, fmt::percent), true);
-            sound (b.choice (i (OscField::Table), p + "table", n + "Wavetable", G, getWavetableNames(), 0), true);
+            sound (b.choice (i (OscField::Table), p + "table", n + "Wavetable", G, getWavetableChoiceNames(), 0), true);
             sound (b.real (i (OscField::WtPos), p + "wtpos", n + "WT Position", G, 0.0f, 1.0f, 0.0f, fmt::percent), true);
             sound (b.integer (i (OscField::Octave), p + "octave", n + "Octave", G, -4, 4, 0,
                               [] (float v) { const int x = juce::roundToInt (v); return (x > 0 ? "+" : "") + juce::String (x) + " oct"; }), true);
@@ -197,6 +204,17 @@ namespace
             sound (b.real (i (OscField::FmFeedback), p + "fmfb", n + "FM Feedback", G, 0.0f, 1.0f, 0.0f, fmt::percent), true);
             sound (b.real (i (OscField::FmEnvAmount), p + "fmenv", n + "FM Env Amount", G, 0.0f, 1.0f, 0.0f, fmt::percent), true);
             sound (b.real (i (OscField::FmKeyTrack), p + "fmkt", n + "FM Key Track", G, 0.0f, 1.0f, 0.0f, fmt::percent), true);
+
+            static const juce::StringArray noteNames { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            sound (b.integer (i (OscField::SampleRoot), p + "root", n + "Sample Root Key", G, 0, 127, 60,
+                              [] (float v) { const int x = juce::roundToInt (v); return noteNames[x % 12] + juce::String (x / 12 - 1); }), true);
+            sound (b.toggle (i (OscField::SampleLoop), p + "loop", n + "Sample Loop", G, true), true);
+            sound (b.real (i (OscField::GrainSize), p + "gsize", n + "Grain Size", G, 0.005f, 1.0f, 0.08f, fmt::seconds, 0.1f), true);
+            sound (b.real (i (OscField::GrainDensity), p + "gdensity", n + "Grain Density", G, 1.0f, 200.0f, 30.0f,
+                           [] (float v) { return juce::String (v, v < 10.0f ? 1 : 0) + " /s"; }, 25.0f), true);
+            sound (b.real (i (OscField::GrainSpray), p + "gspray", n + "Grain Position Spray", G, 0.0f, 1.0f, 0.1f, fmt::percent), true);
+            sound (b.real (i (OscField::GrainPitchSpray), p + "gpitch", n + "Grain Pitch Spray", G, 0.0f, 12.0f, 0.0f,
+                           [] (float v) { return juce::String (v, 1) + " st"; }), true);
         }
     }
 
@@ -335,6 +353,8 @@ namespace
         b.real (i (GlobalField::MorphPosition), "morph_pos", "Morph A/B", ParamGroup::Morph, 0.0f, 1.0f, 0.0f, fmt::percent);
 
         b.toggle (i (GlobalField::MidiOut), "midi_out", "MPE MIDI Out", ParamGroup::Master, false);
+        b.choice (i (GlobalField::OscOversampling), "osc_oversampling", "Oscillator Oversampling", ParamGroup::Master,
+                  { "Off", "Auto", "2x", "4x" }, (int) OscOversampling::Auto);
     }
 
     void addEffects (Builder& b)

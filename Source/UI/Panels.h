@@ -46,18 +46,26 @@ private:
     void editorTick() override;
     ParamKnob& knob (OscField f, const juce::String& label);
     int p (OscField f) const { return pid::osc (oscIndex, f); }
+    void chooseFile();
+    void updateSourceCaption();
 
     const int oscIndex;
     const bool compact;
     OscEngine shownEngine = OscEngine::Analog;
     AnalogWave shownWave = AnalogWave::Saw;
+    bool shownTableImported = false;
+    int shownAssetsVersion = -1;
 
     ParamToggle onToggle;
     ParamChoice engineChoice, waveChoice, tableChoice, noiseChoice, algoChoice, routeChoice, fmSourceChoice, op1RatioChoice, op2RatioChoice;
-    ParamToggle syncToggle;
+    ParamToggle syncToggle, loopToggle;
+    juce::TextButton importButton { "Import" }, clearButton { "Clear" };
+    Caption sourceCaption;
     WaveDisplay display;
     std::map<OscField, ParamKnob*> knobs;
-    Caption fmCaption { "CROSS-MOD" }, unisonCaption { "UNISON" }, operatorCaption { "OPERATORS" };
+    Caption fmCaption { "CROSS-MOD" }, unisonCaption { "UNISON" }, operatorCaption { "OPERATORS" }, grainCaption { "GRAINS" };
+    std::unique_ptr<juce::FileChooser> chooser;
+    juce::File lastDirectory { juce::File::getSpecialLocation (juce::File::userMusicDirectory) };
 };
 
 class FilterPanel : public Card

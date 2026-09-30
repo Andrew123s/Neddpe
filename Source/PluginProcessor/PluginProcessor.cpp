@@ -157,6 +157,7 @@ NeddPEAudioProcessor::NeddPEAudioProcessor()
     publishPattern();
     publishArpPattern();
     publishClip();
+    publishAssets();
     startTimerHz (30);
 }
 
@@ -393,6 +394,88 @@ void NeddPEAudioProcessor::publishMorphTarget()
 void NeddPEAudioProcessor::publishPattern() { shared.pattern.publish (std::make_unique<SequencerPattern> (pattern)); }
 void NeddPEAudioProcessor::publishArpPattern() { shared.arpPattern.publish (std::make_unique<ArpPattern> (arpPattern)); }
 void NeddPEAudioProcessor::publishClip() { shared.clip.publish (std::make_unique<NoteClip> (clip)); }
+void NeddPEAudioProcessor::publishAssets() { shared.assets.publish (std::make_unique<OscillatorAssets> (oscAssets)); }
+
+void NeddPEAudioProcessor::setAssets (const OscillatorAssets& newAssets, const juce::String& undoName,
+                                      const std::vector<std::pair<int, float>>& paramChanges)
+{
+    auto apply = [this] (const OscillatorAssets& a) { oscAssets = a; ++assetsVersion; ++soundVersion; publishAssets(); };
+
+    undoManager.beginNewTransaction (undoName);
+    undoManager.perform (new ValueSwapAction<OscillatorAssets> (apply, oscAssets, newAssets));
+
+    if (! paramChanges.empty())
+    {
+        std::vector<ParameterChangeAction::Change> list;
+        for (const auto& [index, value] : paramChanges)
+        {
+            const auto* p = parameters[(size_t) index];
+            list.push_back ({ index, p->convertFrom0to1 (p->getValue()), value });
+        }
+        undoManager.perform (new ParameterChangeAction (*this, std::move (list)));
+    }
+}
+
+juce::String NeddPEAudioProcessor::importSample (int osc, const juce::File& file)
+{
+    if (! juce::isPositiveAndBelow (osc, kNumOscillators))
+        return "Invalid oscillator.";
+
+    juce::String error;
+    auto sample = assets::loadSample (file, error);
+    if (sample == nullptr)
+        return error;
+
+    auto updated = oscAssets;
+    updated.slots[(size_t) osc].sample = std::move (sample);
+
+    const auto* engineParam = parameters[(size_t) pid::osc (osc, OscField::Engine)];
+    const auto oscEngine = (OscEngine) juce::roundToInt (engineParam->convertFrom0to1 (engineParam->getValue()));
+    std::vector<std::pair<int, float>> changes;
+    if (oscEngine != OscEngine::Sample && oscEngine != OscEngine::Granular)
+        changes.push_back ({ pid::osc (osc, OscField::Engine), (float) OscEngine::Granular });
+    changes.push_back ({ pid::osc (osc, OscField::On), 1.0f });
+
+    setAssets (updated, "Import sample", changes);
+    return {};
+}
+
+juce::String NeddPEAudioProcessor::importWavetable (int osc, const juce::File& file)
+{
+    if (! juce::isPositiveAndBelow (osc, kNumOscillators))
+        return "Invalid oscillator.";
+
+    juce::String error;
+    auto table = assets::loadWavetable (file, error);
+    if (table == nullptr)
+        return error;
+
+    auto updated = oscAssets;
+    updated.slots[(size_t) osc].wavetable = std::move (table);
+    setAssets (updated, "Import wavetable",
+               { { pid::osc (osc, OscField::Engine), (float) OscEngine::Wavetable },
+                 { pid::osc (osc, OscField::Table), (float) kImportedWavetableChoice },
+                 { pid::osc (osc, OscField::On), 1.0f } });
+    return {};
+}
+
+void NeddPEAudioProcessor::removeSample (int osc)
+{
+    if (! juce::isPositiveAndBelow (osc, kNumOscillators) || oscAssets.slots[(size_t) osc].sample == nullptr)
+        return;
+    auto updated = oscAssets;
+    updated.slots[(size_t) osc].sample.reset();
+    setAssets (updated, "Remove sample");
+}
+
+void NeddPEAudioProcessor::removeWavetable (int osc)
+{
+    if (! juce::isPositiveAndBelow (osc, kNumOscillators) || oscAssets.slots[(size_t) osc].wavetable == nullptr)
+        return;
+    auto updated = oscAssets;
+    updated.slots[(size_t) osc].wavetable.reset();
+    setAssets (updated, "Remove wavetable");
+}
 
 void NeddPEAudioProcessor::setPattern (const SequencerPattern& newPattern, const juce::String& undoName)
 {
@@ -501,6 +584,7 @@ void NeddPEAudioProcessor::timerCallback()
     shared.tuning.collectGarbage();
     shared.lfoShapes.collectGarbage();
     shared.morphTarget.collectGarbage();
+    shared.assets.collectGarbage();
 
     ControllerEvent e;
     int processed = 0;
@@ -544,6 +628,7 @@ PresetState NeddPEAudioProcessor::captureState() const
     st.hasMorphTarget = morphTarget != nullptr;
     if (morphTarget != nullptr)
         st.morphTarget = *morphTarget;
+    st.assets = oscAssets;
     return st;
 }
 
@@ -565,6 +650,12 @@ void NeddPEAudioProcessor::applyStructured (const PresetState& s)
     else
         morphTarget.reset();
     publishMorphTarget();
+    if (s.assets != oscAssets)
+    {
+        oscAssets = s.assets;
+        ++assetsVersion;
+        publishAssets();
+    }
     ++soundVersion;
 }
 

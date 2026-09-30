@@ -10,16 +10,40 @@ golden-ratio-spaced phases so a stack never phase-cancels on the attack; *Phase 
 
 | Engine | Implementation | Aliasing strategy |
 |---|---|---|
-| Analog | Sine (table), triangle (naive; harmonics fall at 12 dB/oct), saw and square/pulse with PolyBLEP; pulse DC is removed | PolyBLEP residuals at every discontinuity |
-| Wavetable | 32-frame tables, 2048-sample frames, bilinear interpolation across phase and frame | 10 mip levels per frame (harmonics 1024 >> m); the mip is chosen per unison voice so aliases fold back above ~18 kHz |
-| FM | 3 operators per unison voice (carrier + 2 modulators): Stack (2>1>C), Parallel (1+2>C), Branch (2>1>C and 2>C). Ratios x0.25-x16 plus fine offset, operator feedback with 2-sample averaging, envelope and key-tracking of the index | Inherent to FM; kept moderate by index scaling and key tracking |
-| Noise | White, pink (Kellet), brown, crackle (pitch-dependent density), digital (sample & hold at the note frequency) | n/a |
+| Analog | Sine (degree-11 polynomial), triangle (naive; harmonics fall at 12 dB/oct), saw and square/pulse with PolyBLEP; pulse DC is removed | PolyBLEP residuals at every discontinuity; under phase modulation the BLEP width follows the instantaneous phase increment |
+| Wavetable | 32-frame factory tables or an imported table (up to 256 frames), 2048-sample frames, bilinear interpolation across phase and frame | 10 mip levels per frame (harmonics 1024 >> m); the mip is chosen per unison voice so aliases fold back above ~18 kHz (when oversampled, everything stays below the oversampled Nyquist frequency) |
+| FM | 3 operators per unison voice (carrier + 2 modulators): Stack (2>1>C), Parallel (1+2>C), Branch (2>1>C and 2>C). Ratios x0.25-x16 plus fine offset, operator feedback with 2-sample averaging, envelope and key-tracking of the index | Index scaling and key tracking; set *Oscillator Oversampling* to 2x/4x for extreme indices |
+| Noise | White, pink (Kellet), brown, crackle (pitch-dependent density), digital (sample & hold at the note frequency) | n/a (rendered at the base rate and held when oversampled, so its spectrum does not change) |
+| Granular | Up to 32 overlapping Hann-windowed grains per oscillator per note, read from the oscillator's sample (or the built-in source) with 4-point Hermite interpolation. Position (the WT Position control, so MPE Slide can scan it per note), size 5 ms-1 s, density 1-200 grains/s, position spray, pitch spray (+-12 st), stereo scatter from *Spread*. Grain pitch follows the note relative to *Sample Root Key*. Level is normalised by `1/sqrt(overlap)` | Hermite interpolation |
+| Sample | Pitched playback of the oscillator's sample from a start point (WT Position control), one-shot or looped to the end with a cross-fade (up to 10 ms) at the loop point. Unison, detune, spread, cross-FM (none: phase mod is ignored), sync (restarts from the start point) all apply | Hermite interpolation; transposing far up aliases unless oversampled |
 
 Interactions, per sample: cross-FM (phase modulation from any oscillator; later oscillators use the previous
 sample), hard sync to the previous oscillator with sub-sample reset position, ring modulation with the previous
 oscillator. Each oscillator can bypass the filter (*Route: Direct*).
 
-Known limitation: sync resets and cross-FM are not band-limited, so heavy sync/FM at high pitches aliases.
+### SIMD unison
+
+Unison sub-voices of the Analog and FM engines are rendered four at a time (`DSP/Simd.h`: SSE2 on x86-64, a portable
+fallback elsewhere). Phases, increments, pan gains and FM operator state are stored per lane; the waveform switch is
+taken once per group of four instead of once per sub-voice, and the sine used by FM operators and the analog sine is
+a polynomial rather than a table lookup, so it vectorises. An 8-voice stack is two passes instead of eight. Wavetable,
+Sample and Granular sub-voices are still rendered one at a time (their table/sample reads are gathers).
+
+### Anti-aliasing of sync and cross-modulation
+
+- **Band-limited hard sync.** When the master wraps, the slave resets at the exact sub-sample instant. The jump h
+  between the slave's value just before the reset and its value at the reset point is band-limited with a two-sided
+  PolyBLEP step: the previous sample gets `+h/2 * d^2` and the current one `-h/2 * (1-d)^2`, where d is the time since
+  the reset in samples. To correct the previous sample, every oscillator outputs with a fixed one-sample delay.
+  This works for every engine that can be synced (Analog, Wavetable, FM, Sample).
+- **Oscillator oversampling** (`osc_oversampling`: Off / Auto / 2x / 4x, Settings page). The oscillators of a note
+  run at 2x or 4x the sample rate, including cross-FM, ring modulation and sync, and the result is decimated by a
+  47-tap Kaiser half-band FIR per stage (`DSP/Decimator.h`: passband to 0.39 fs, stopband below -80 dB from 0.61 fs,
+  11.5 samples latency per 2x stage). Auto oversamples 2x only the notes that use cross-FM (amount > 0 or routed in
+  the matrix), ring modulation or hard sync; the choice is made when the note starts so the latency never changes
+  under a sounding note. Envelopes, filter and everything after the oscillators stay at the base rate.
+- Cross-FM through oversampling reduces aliasing a lot but does not remove it completely: phase modulation creates
+  sidebands without limit, so very deep cross-FM on high notes can still produce some above 2x/4x Nyquist.
 
 ### Wavetables (`DSP/Wavetable.*`)
 
@@ -28,6 +52,22 @@ PWM, Harmonic Sweep, Formant Vowels, Growl, Sync Sweep, Digital Steps, Glass, Dr
 designs are rendered at 16384 samples per cycle and converted to a spectrum with an FFT; spectral designs define
 harmonic amplitudes directly. Each mip level is an inverse FFT of the truncated spectrum, normalised with the
 mip-0 gain so levels match across mips. The bank (~26 MB) is shared by all plugin instances in a process.
+
+### Imported wavetables and samples (`Synth/OscillatorAssets.*`)
+
+Each oscillator can hold one imported wavetable and one imported sample (*Import* on the oscillator panel).
+
+- **Wavetables**: WAV/AIFF/FLAC/OGG. The frame size comes from a Serum-style `clm ` chunk if present, otherwise the
+  first of 2048, 1024, 512, 256 or 4096 samples that divides the file length; a short file that fits none is one
+  single cycle, a long one is cut into 2048-sample frames. Frames are resampled to 2048 samples and go through the
+  same FFT mip-mapping as the factory tables (DC removed, each frame normalised). Up to 256 frames. Select
+  *Imported* in the wavetable list to play it.
+- **Samples**: WAV/AIFF/FLAC/OGG, mono or stereo (first two channels), up to 60 s, kept at their own sample rate.
+  Used by the Granular and Sample engines; without an import they play a built-in 4-second vowel texture generated
+  at start-up from the factory tables (root C4).
+- Imported content is part of the sound: saved inside presets and projects (24-bit FLAC, base64; raw float if the
+  audio exceeds full scale), restored by undo, and handed to the audio thread through a `RealtimeExchange` so the
+  audio thread never allocates or frees it.
 
 ## Filter (`DSP/VoiceFilter.h`)
 
@@ -106,5 +146,7 @@ modulating *Delay Send* / *Reverb Send* per note decides which notes echo or blo
 | Normal | 32 | 2x |
 | High | 16 | 4x |
 | Ultra | 8 | 8x |
+
+Oscillator oversampling is a separate setting (see *Anti-aliasing of sync and cross-modulation* above).
 
 Measured costs are in [TESTING.md](TESTING.md#performance).

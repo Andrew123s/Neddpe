@@ -76,6 +76,9 @@ enum class ModDest : int
     ReverbMix,
     ArpGate,
     ArpProbability,
+    // ---- appended per-voice destinations ----
+    GrainSize,
+    GrainDensity,
     Count
 };
 

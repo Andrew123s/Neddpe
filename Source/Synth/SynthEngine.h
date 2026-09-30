@@ -91,6 +91,7 @@ private:
     ParamSnapshot effectParams;   // morphed copy of the global parameters when A/B morph is active
 
     const ParamSnapshot* currentParams = nullptr;
+    const OscillatorAssets* currentAssets = nullptr;
 };
 
 } // namespace nedd

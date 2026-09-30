@@ -13,10 +13,16 @@ reverb.
 
 **Sound engine**
 - 3 oscillators per note, each **Analog** (PolyBLEP saw/square/pulse with PWM, triangle, sine), **Wavetable**
-  (10 procedurally generated, mip-mapped tables with smooth scanning), **3-operator FM** (3 algorithms, ratios,
-  fine ratio, feedback, envelope amount, key tracking) or **Noise** (white, pink, brown, crackle, digital)
-- Up to 8-voice unison per oscillator with detune and stereo spread; cross-FM, hard sync, ring modulation,
-  per-oscillator filter bypass
+  (10 procedurally generated, mip-mapped tables with smooth scanning, or **your own imported wavetable**),
+  **3-operator FM** (3 algorithms, ratios, fine ratio, feedback, envelope amount, key tracking), **Noise** (white,
+  pink, brown, crackle, digital), **Granular** (up to 32 grains: position, size, density, position and pitch spray)
+  or **Sample** (pitched playback, one-shot or cross-faded loop)
+- **Import** WAV / AIFF / FLAC / OGG files as wavetables (Serum-style frame markers understood) or as samples for the
+  granular and sample engines; imported audio is saved inside presets and projects
+- Up to 8-voice unison per oscillator with detune and stereo spread, rendered four sub-voices at a time with SIMD;
+  cross-FM, **band-limited hard sync**, ring modulation, per-oscillator filter bypass
+- **Oscillator oversampling** (Off / Auto / 2x / 4x) against cross-FM, ring and sync aliasing; Auto only
+  oversamples the notes that need it
 - Per-note filter: LP12/LP24/HP12/HP24/band/notch (TPT state-variable) and a zero-delay-feedback ladder, with drive,
   key tracking, envelope, velocity and mix
 - Amp, filter and mod envelopes (delay/attack/hold/decay/sustain/release with curves), draggable on screen
@@ -27,7 +33,8 @@ reverb.
 
 **Modulation**
 - 16-slot matrix: 23 sources (MPE pitch/pressure/slide, velocity, release velocity, wheel, bend, aftertouch, 3 LFOs,
-  3 envelopes, random, S&H, key, note, gate, 4 macros) to 50 destinations, with curve and polarity per route
+  3 envelopes, random, S&H, key, note, gate, 4 macros) to 52 destinations (including grain size and density), with
+  curve and polarity per route
 - Per-note destinations are evaluated for every voice; effect destinations globally
 - Knobs show the reach of their modulation and the live value of the most recent note; the matrix inspector
   explains any destination as base + each route = result
@@ -54,7 +61,7 @@ reverb.
 **Effects**: distortion (5 types, oversampled 1-8x), saturation, bitcrush, chorus, phaser, flanger, stereo/ping-pong
 delay and an FDN reverb (both fed by **per-note sends**), 3-band EQ, compressor, output limiter.
 
-**Sound management**: 35 factory presets in 10 categories, user presets with categories, favourites and search,
+**Sound management**: 37 factory presets in 10 categories, user presets with categories, favourites and search,
 intelligent randomise (full / oscillators / filter / modulation / MPE / effects / texture), mutation with history,
 A/B morph with per-note morph position, full undo/redo, complete state recall in the DAW.
 
@@ -63,6 +70,18 @@ A/B morph with per-note morph position, full undo/redo, complete state recall in
 | ![MPE performance view](docs/images/mpe.png) | ![Note editor](docs/images/note-editor.png) |
 | ![Modulation matrix](docs/images/matrix.png) | ![Effects](docs/images/effects.png) |
 | ![Sequencer](docs/images/sequencer.png) | ![Presets](docs/images/presets.png) |
+
+## Run it without building
+
+Prebuilt Windows x64 binaries of the current version are in [`dist/`](dist):
+
+- `dist/NeddPE.exe`: the standalone app. Double-click it; choose your audio and MIDI devices under *Options >
+  Audio/MIDI Settings*.
+- `dist/NeddPE.vst3`: the plugin. Copy the whole folder to `C:\Program Files\Common Files\VST3` and rescan in your
+  DAW.
+
+If Windows SmartScreen warns about an unrecognised app, choose *More info > Run anyway* (the binaries are not
+code-signed). The Visual C++ runtime is linked statically, so nothing else needs installing.
 
 ## Build
 
@@ -102,28 +121,37 @@ Source/
 
 ## Status
 
-Built and verified on Windows 11 with MSVC 19.37 and JUCE 8.0.9:
+Version 0.1 was built and verified on Windows 11 with MSVC 19.37 and JUCE 8.0.9: 662 automated checks passed in
+Release and Debug with no JUCE assertions, and the VST3 passed host-level validation through JUCE's VST3 hosting.
 
-- 662 automated checks pass in Release and in Debug, with no JUCE assertions
-- The VST3 binary passes host-level validation through JUCE's VST3 hosting: it loads, plays MPE, round-trips
-  state and opens its editor
-- Performance: see [TESTING.md](docs/TESTING.md#performance)
+**Version 0.2** (SIMD unison, band-limited sync, oscillator oversampling, granular and sample engines, wavetable and
+sample import, AGPLv3 licence) builds without warnings but **has not been run through the test suite or the
+benchmark yet**. Run `ctest --preset release` and `NeddPETests.exe --bench` to check it; the performance table in
+[TESTING.md](docs/TESTING.md#performance) is still the 0.1 measurement.
 
 Not done yet (the architecture has room for each; see [ARCHITECTURE.md](docs/ARCHITECTURE.md#extension-points)):
 
 - Not yet tested inside commercial DAWs (Bitwig, Ableton Live, Cubase, Reaper, FL Studio); host notes in MPE.md
   are general guidance
-- Granular engine and user sample / wavetable import: not implemented
 - VST3 Note Expression: not used (MPE arrives as per-channel MIDI, which is how most hosts deliver it)
-- Hard sync and cross-FM are not band-limited; oscillators are not oversampled
-- Voice rendering is scalar; SIMD across voices is the planned CPU optimisation
+- Cross-FM is oversampled, not analytically band-limited: very deep cross-FM on high notes can still alias a little
+- Wavetable, Sample and Granular sub-voices are rendered one at a time (only Analog and FM unison uses SIMD)
 - macOS / AU: not built or tested yet
 
 ## Licence
 
-NeddPE's own source code is MIT licensed (see [LICENSE](LICENSE)).
+Copyright (C) 2026 Andrew Osei Owusu Sekyere.
 
-NeddPE is built on **JUCE**, which is dual licensed (AGPLv3 or a commercial JUCE licence). Building from source for
-your own use is fine. **Distributing a compiled NeddPE binary** requires complying with JUCE's terms: either
-release under the AGPLv3, or hold a JUCE licence that covers your use (JUCE offers a free Starter tier below a
-revenue limit). See https://juce.com/legal/juce-8-licence/.
+NeddPE is free software: you can redistribute it and/or modify it under the terms of the **GNU Affero General Public
+License version 3** (or, at your option, any later version) as published by the Free Software Foundation. See
+[LICENSE](LICENSE). It is distributed WITHOUT ANY WARRANTY.
+
+Why AGPLv3: NeddPE is built on **JUCE**, which is offered under the AGPLv3 or a commercial licence, and on the
+Steinberg VST3 SDK bundled with JUCE, which is offered under the GPLv3 or Steinberg's proprietary licence. Licensing
+NeddPE itself under the AGPLv3 makes the whole program use one consistent set of terms, so the compiled binaries in
+`dist/` and any you build can be shared legally, as long as whoever receives a binary can also get the complete
+source code (this repository) under the same licence.
+
+If you ever want to sell a closed-source version, you would need a commercial JUCE licence (JUCE has a free tier
+below a revenue limit) and Steinberg's VST3 licence agreement, and you could then relicense your own code, since
+you hold its copyright. See https://juce.com/legal/juce-8-licence/.

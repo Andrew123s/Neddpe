@@ -4,6 +4,7 @@
 #include "DSP/Wavetable.h"
 #include "Modulation/ModMatrix.h"
 #include "Parameters/ParamSnapshot.h"
+#include "Synth/OscillatorAssets.h"
 #include "Synth/Tuning.h"
 
 namespace nedd
@@ -27,6 +28,7 @@ struct VoiceContext
     const TuningData* tuning = nullptr;
     const dsp::LfoCustomShapes* lfoShapes = nullptr;
     const WavetableBank* wavetables = nullptr;
+    const OscillatorAssets* assets = nullptr;   // imported wavetables and samples (may be null)
 
     /** Values of the global (not per-note) modulation sources: wheel, bend, aftertouch, macros. */
     std::array<float, (size_t) kNumModSources> globalSources {};

@@ -25,6 +25,7 @@ enum class OscField : int
     On, Engine, Wave, PulseWidth, Table, WtPos, Octave, Semi, Fine, Phase, PhaseRandom,
     Level, Pan, Unison, Detune, Spread, FmSource, FmAmount, Sync, Ring, Route, NoiseType,
     FmAlgorithm, Op1Ratio, Op2Ratio, OpFine, Op1Amount, Op2Amount, FmFeedback, FmEnvAmount, FmKeyTrack,
+    SampleRoot, SampleLoop, GrainSize, GrainDensity, GrainSpray, GrainPitchSpray,
     Count
 };
 
@@ -48,6 +49,7 @@ enum class GlobalField : int
     SampleHoldDivision,
     MorphOn, MorphPosition,
     MidiOut,
+    OscOversampling,
     Count
 };
 
@@ -146,6 +148,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 /** Choice lists shared with the UI. */
 juce::StringArray getOscEngineNames();
+/** Wavetable choice list: the factory bank followed by "Imported" (the oscillator's own imported table). */
+juce::StringArray getWavetableChoiceNames();
+/** Index of "Imported" in the wavetable choice list = number of factory wavetables (checked by WavetableBank). */
+constexpr int kImportedWavetableChoice = 10;
+constexpr int importedWavetableChoice() noexcept { return kImportedWavetableChoice; }
 juce::StringArray getAnalogWaveNames();
 juce::StringArray getNoiseTypeNames();
 juce::StringArray getFmAlgorithmNames();
@@ -155,7 +162,8 @@ juce::StringArray getFilterTypeNames();
 juce::StringArray getLfoShapeNames();
 juce::StringArray getScaleNames();
 
-enum class OscEngine : int { Analog = 0, Wavetable, FM, Noise };
+enum class OscEngine : int { Analog = 0, Wavetable, FM, Noise, Granular, Sample };
+enum class OscOversampling : int { Off = 0, Auto, X2, X4 };
 enum class AnalogWave : int { Sine = 0, Triangle, Saw, Square, Pulse };
 enum class NoiseType : int { White = 0, Pink, Brown, Crackle, Digital };
 enum class FmAlgorithm : int { Stack = 0, Parallel, Branch };

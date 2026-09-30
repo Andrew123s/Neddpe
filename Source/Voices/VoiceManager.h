@@ -31,6 +31,13 @@ public:
 
     void render (const VoiceContext& ctx, const VoiceBuses& buses, int startSample, int numSamples) noexcept;
 
+    /** Every voice re-reads its settings before rendering again. */
+    void forceControlUpdate() noexcept
+    {
+        for (auto& v : voices)
+            v.forceControlUpdate();
+    }
+
     int getNumActiveVoices() const noexcept;
     int getNumSoundingNotes() const noexcept;
 

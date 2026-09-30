@@ -25,7 +25,7 @@ Source/
 
 ```
 processBlock
-  ParamReader.read(snapshot)                 338 relaxed atomic loads -> plain values
+  ParamReader.read(snapshot)                 357 relaxed atomic loads -> plain values
   read host transport (bpm, ppq, playing)    internal clock when the host is stopped
   SynthEngine.process (in chunks <= prepared block size)
     beginBlock          routing from the matrix params, acquire exchanged data (tuning, LFO curves,
@@ -48,6 +48,9 @@ oscillator frequencies, filter targets, gains and sends. Between updates it runs
 with cross-FM/sync/ring, filter, amp envelope) with every target linearly interpolated, so control-rate modulation
 never steps audibly.
 
+The oscillator section of the loop can run at 2x or 4x (oscillator oversampling, chosen per note at note-on) and is
+decimated by half-band FIR filters before the filter; unison sub-voices are rendered four at a time with SIMD.
+
 ### Voice vs global processing
 
 | Per voice (per note) | Global |
@@ -68,7 +71,7 @@ Nothing on the audio thread allocates, locks or does file I/O after `prepareToPl
 | Data | Writer | Mechanism |
 |---|---|---|
 | Parameters | host / UI | APVTS atomics, read once per block into a `ParamSnapshot` |
-| Tuning, LFO curves, morph B, sequencer pattern, arp pattern, clip | message thread | `RealtimeExchange<T>`: publish a new immutable object; the audio thread swaps a pointer at block start; retired objects go back through a lock-free queue and are freed on the message thread |
+| Tuning, LFO curves, morph B, sequencer pattern, arp pattern, clip, imported wavetables/samples | message thread | `RealtimeExchange<T>`: publish a new immutable object; the audio thread swaps a pointer at block start; retired objects go back through a lock-free queue and are freed on the message thread. When the imported content changes, every voice re-reads its settings before rendering again, so no voice keeps a pointer to content that is about to be freed |
 | On-screen keyboard MIDI | UI | `SpscFifo<UiMidiMessage>` |
 | Controllers for MIDI learn | audio | `SpscFifo<ControllerEvent>`, drained by a 30 Hz timer that applies mappings with `setValueNotifyingHost` |
 | Recorded performance events | audio | `SpscFifo<RecordedEvent>` (16k), drained by the processor timer into `PerformanceRecorder` |
@@ -113,8 +116,9 @@ for the most recent note; the matrix inspector breaks a destination down into ba
 
 ## Extension points
 
-- **New oscillator engine** (e.g. granular, sample playback): append to `OscEngine` and the engine choice list, add a
-  branch in `Oscillator::renderUnison`, add controls to `OscillatorPanel`. The voice, matrix and morph pick it up.
+- **New oscillator engine**: append to `OscEngine` and the engine choice list, add a render function to `Oscillator`
+  (see `renderGranular` / `renderSample`), add controls to `OscillatorPanel`. The voice, matrix and morph pick it up.
+  Content an engine needs from files goes in `OscillatorAssets`, which is already saved, undone and exchanged.
 - **New modulation source/destination**: append to `ModSource`/`ModDest` and their info tables, fill the source in
   `Voice::updateControl` (or the global evaluation), apply the destination where the parameter is used, and map it
   to its knob in `ParamModMapping.cpp` for visualisation.

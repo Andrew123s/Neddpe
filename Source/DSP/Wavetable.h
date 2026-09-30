@@ -35,11 +35,13 @@ public:
         return samples.data() + ((size_t) frame * kNumMips + (size_t) mip) * kFrameStride;
     }
 
-    /** Chooses a mip level for a phase increment (cycles per sample). */
-    static int selectMip (float increment, float sampleRate) noexcept
+    /** Chooses a mip level for a phase increment (cycles per sample).
+        At the base rate, harmonics above Nyquist are allowed as long as their alias folds back
+        above ~18 kHz. When oversampled (strict), everything stays below the oversampled Nyquist
+        frequency so the decimation filter can remove it cleanly. */
+    static int selectMip (float increment, float sampleRate, bool strict = false) noexcept
     {
-        // Allow harmonics above Nyquist as long as their alias folds back above ~18 kHz.
-        const float allowedTop = std::max (sampleRate * 0.5f, sampleRate - 18000.0f);
+        const float allowedTop = strict ? sampleRate * 0.5f : std::max (sampleRate * 0.5f, sampleRate - 18000.0f);
         const float f0 = std::max (std::abs (increment) * sampleRate, 1.0e-3f);
         const float maxHarmonic = allowedTop / f0;
 
@@ -75,6 +77,13 @@ public:
 
 /** Names of the built-in wavetables, in bank order (parameter choice list: append only). */
 juce::StringArray getWavetableNames();
+
+/**
+    Builds a band-limited, mip-mapped wavetable from single-cycle frames of kFrameSize samples
+    each (e.g. an imported wavetable file). DC is removed and each frame is normalised.
+    Message thread only (allocates and runs FFTs).
+*/
+Wavetable buildWavetableFromFrames (const juce::String& name, const float* frames, int numFrames);
 
 /** The factory wavetable bank, generated procedurally once per process and shared by all instances. */
 class WavetableBank

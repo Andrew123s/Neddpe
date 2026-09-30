@@ -32,6 +32,10 @@ juce::String helpForParam (int paramIndex)
         { "scale_bendq", "Pulls per-note pitch bends toward the nearest scale degree." },
         { "delay_send", "Per-note send into the delay. Modulate it from pressure or velocity for notes that echo only when played harder." },
         { "reverb_send", "Per-note send into the reverb." },
+        { "osc_oversampling", "Runs the oscillators of a note at 2x or 4x the sample rate and filters the result back down, so cross-FM, "
+                              "ring modulation, hard sync and extreme FM-engine settings do not fold harmonics back as aliasing. Auto "
+                              "oversamples 2x only the notes that use cross-FM, ring modulation or sync (decided when the note starts). "
+                              "2x / 4x apply to every note and cost about 2x / 4x the oscillator CPU." },
     };
 
     const auto& def = getParamDef (paramIndex);
@@ -41,11 +45,18 @@ juce::String helpForParam (int paramIndex)
         return def.name + "\n" + it->second;
 
     const auto id = def.id;
-    if (id.endsWith ("_wtpos"))  return def.name + "\nPosition in the wavetable. Route MPE Slide here to change the harmonic character of each note separately.";
-    if (id.endsWith ("_fm"))     return def.name + "\nPhase modulation from the selected FM source oscillator.";
+    if (id.endsWith ("_wtpos"))  return def.name + "\nWavetable engine: position in the table. Granular: where in the sample grains are read. "
+                                                   "Sample: the start point. Route MPE Slide here to change each note separately.";
+    if (id.endsWith ("_fm"))     return def.name + "\nPhase modulation from the selected FM source oscillator (oversampled in Auto mode to limit aliasing).";
+    if (id.endsWith ("_root"))   return def.name + "\nThe key at which the sample plays at its recorded pitch.";
+    if (id.endsWith ("_loop"))   return def.name + "\nSample engine: loop from the start point to the end with a short cross-fade, or play once.";
+    if (id.endsWith ("_gsize"))  return def.name + "\nLength of each grain. Modulate with the 'Grain Size' destination.";
+    if (id.endsWith ("_gdensity")) return def.name + "\nGrains started per second (up to 32 overlap). Modulate with the 'Grain Density' destination.";
+    if (id.endsWith ("_gspray")) return def.name + "\nRandom scatter of each grain's read position around POSITION.";
+    if (id.endsWith ("_gpitch")) return def.name + "\nRandom pitch offset per grain, up to this many semitones either way.";
     if (id.endsWith ("_unison")) return def.name + "\nNumber of stacked, detuned copies of the oscillator.";
     if (id.endsWith ("_ring"))   return def.name + "\nRing modulation with the previous oscillator.";
-    if (id.endsWith ("_sync"))   return def.name + "\nHard-syncs this oscillator to the previous one.";
+    if (id.endsWith ("_sync"))   return def.name + "\nHard-syncs this oscillator to the previous one. Each reset is band-limited (PolyBLEP).";
     if (id.endsWith ("_route"))  return def.name + "\nSend this oscillator through the filter, or straight to the amp.";
     if (id.startsWith ("macro")) return def.name + "\nPerformance macro: a modulation source you can route anywhere in the matrix and automate from the DAW.";
 

@@ -4,6 +4,7 @@
 #include "Modulation/Monitors.h"
 #include "Parameters/ParamSnapshot.h"
 #include "Sequencer/Generators.h"
+#include "Synth/OscillatorAssets.h"
 #include "Synth/Tuning.h"
 #include "Utilities/RealtimeExchange.h"
 #include "Utilities/SpscFifo.h"
@@ -48,6 +49,7 @@ struct EngineShared
     RealtimeExchange<SequencerPattern> pattern;
     RealtimeExchange<ArpPattern> arpPattern;
     RealtimeExchange<NoteClip> clip;
+    RealtimeExchange<OscillatorAssets> assets;
 
     SpscFifo<RecordedEvent, 16384> recorded;
     std::atomic<int> clipCommand { (int) ClipCommand::None };

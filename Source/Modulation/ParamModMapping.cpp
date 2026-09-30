@@ -26,6 +26,8 @@ namespace
                 add (pid::osc (o, OscField::Fine), oscDest (ModDest::Osc1Pitch, o), Mapping::Cents);
                 add (pid::osc (o, OscField::Detune), ModDest::UnisonDetune);
                 add (pid::osc (o, OscField::Spread), ModDest::StereoWidth);
+                add (pid::osc (o, OscField::GrainSize), ModDest::GrainSize, Mapping::TimeOctaves);
+                add (pid::osc (o, OscField::GrainDensity), ModDest::GrainDensity, Mapping::TimeOctaves);
             }
 
             add (pid::filter (FilterField::Cutoff), ModDest::FilterCutoff, Mapping::Cutoff);

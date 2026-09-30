@@ -60,7 +60,8 @@ namespace
             if (! on)
                 continue;
 
-            const int engine = dice.weighted ({ 0.35f, 0.35f, 0.2f, o > 0 ? 0.1f : 0.0f });
+            // Granular uses the imported sample of the oscillator, or the built-in source.
+            const int engine = dice.weighted ({ 0.33f, 0.33f, 0.2f, o > 0 ? 0.1f : 0.0f, 0.06f });
             set (s, p (OscField::Engine), (float) engine);
             set (s, p (OscField::Wave), (float) dice.weighted ({ 0.15f, 0.15f, 0.35f, 0.2f, 0.15f }));
             set (s, p (OscField::PulseWidth), dice.uniform (0.15f, 0.6f));
@@ -95,6 +96,10 @@ namespace
             set (s, p (OscField::FmFeedback), dice.chance (0.6f) ? 0.0f : dice.uniform (0.05f, 0.35f));
             set (s, p (OscField::FmEnvAmount), dice.uniform (0.0f, 0.8f));
             set (s, p (OscField::NoiseType), (float) dice.integer (0, 4));
+            set (s, p (OscField::GrainSize), dice.logUniform (0.02f, 0.4f));
+            set (s, p (OscField::GrainDensity), dice.logUniform (8.0f, 80.0f));
+            set (s, p (OscField::GrainSpray), dice.uniform (0.0f, 0.5f));
+            set (s, p (OscField::GrainPitchSpray), dice.chance (0.7f) ? 0.0f : dice.uniform (0.1f, 1.0f));
             if (engine == (int) OscEngine::Noise)
                 set (s, p (OscField::Level), dice.uniform (0.15f, 0.4f));
         }
@@ -187,6 +192,7 @@ namespace
                 continue;
             const auto engine = s.params.getChoice<OscEngine> (pid::osc (o, OscField::Engine));
             if (engine == OscEngine::Wavetable) { d.push_back (oscDest (ModDest::Osc1WtPos, o)); d.push_back (oscDest (ModDest::Osc1WtPos, o)); }
+            if (engine == OscEngine::Granular) { d.push_back (oscDest (ModDest::Osc1WtPos, o)); d.push_back (ModDest::GrainDensity); d.push_back (ModDest::GrainSize); }
             if (engine == OscEngine::FM || s.params[pid::osc (o, OscField::FmAmount)] > 0.0f) d.push_back (oscDest (ModDest::Osc1Fm, o));
             if (engine == OscEngine::Analog && s.params.getChoice<AnalogWave> (pid::osc (o, OscField::Wave)) == AnalogWave::Pulse)
                 d.push_back (oscDest (ModDest::Osc1Pw, o));

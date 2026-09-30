@@ -76,6 +76,10 @@ juce::ValueTree PresetState::toValueTree() const
     root.appendChild (pattern.toValueTree(), nullptr);
     root.appendChild (arpPattern.toValueTree(), nullptr);
 
+    auto assetTree = assets.toValueTree();
+    if (assetTree.getNumChildren() > 0)
+        root.appendChild (assetTree, nullptr);
+
     if (hasMorphTarget)
     {
         juce::ValueTree morph (ids::morphB);
@@ -131,6 +135,7 @@ PresetState PresetState::fromValueTree (const juce::ValueTree& root)
 
     s.pattern.fromValueTree (root.getChildWithName (ids::sequencer));
     s.arpPattern.fromValueTree (root.getChildWithName (ids::arpPattern));
+    s.assets = OscillatorAssets::fromValueTree (root.getChildWithName ("Assets"));
 
     const auto morph = root.getChildWithName (ids::morphB);
     s.hasMorphTarget = morph.isValid();

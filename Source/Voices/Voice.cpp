@@ -55,8 +55,38 @@ void Voice::prepare (float newSampleRate)
     filterEnv.setSampleRate (sampleRate);
     modEnv.setSampleRate (sampleRate);
     morphParams.setToDefaults();
-    (void) getVoiceMorphParams();   // build the static list off the audio thread
+    (void) getVoiceMorphParams();       // build the static list off the audio thread
+    (void) assets::getBuiltInSample();  // likewise the built-in granular source
     kill();
+}
+
+int Voice::chooseOversampling (const VoiceContext& ctx) noexcept
+{
+    const auto& p = *ctx.params;
+    switch (p.getChoice<OscOversampling> (pid::global (GlobalField::OscOversampling)))
+    {
+        case OscOversampling::Off: return 1;
+        case OscOversampling::X2:  return 2;
+        case OscOversampling::X4:  return 4;
+        case OscOversampling::Auto: break;
+    }
+
+    // Auto: oversample the notes whose oscillators interact in ways the band-limiting of a
+    // single oscillator cannot see: cross-FM, ring modulation and hard sync. (The FM engine's
+    // own operators are left at 1x in Auto, as their index is kept moderate; choose 2x or 4x
+    // for extreme FM settings.)
+    for (int o = 0; o < kNumOscillators; ++o)
+    {
+        auto f = [o] (OscField field) { return pid::osc (o, field); };
+        if (! p.getBool (f (OscField::On)))
+            continue;
+        if (p.getBool (f (OscField::Sync))
+            || p[f (OscField::FmAmount)] > 0.0f
+            || p[f (OscField::Ring)] > 0.0f
+            || (ctx.routing != nullptr && ctx.routing->uses (oscDest (ModDest::Osc1Fm, o))))
+            return 2;
+    }
+    return 1;
 }
 
 float Voice::tunedPitch (const VoiceContext& ctx, int note) const noexcept
@@ -88,8 +118,16 @@ void Voice::start (const NoteEvent& e, int soundingNote, const VoiceContext& ctx
     rng.seed (seed);
     state.noteRandom = rng.nextBipolar();
 
+    // Fixed for the note's lifetime so the (small) decimation latency never changes mid-note.
+    oversampling = chooseOversampling (ctx);
+    for (auto& d : decimators)
+        d.reset();
+
     for (int o = 0; o < kNumOscillators; ++o)
+    {
+        oscillators[(size_t) o].setOversampling (oversampling);
         oscillators[(size_t) o].noteOn (p[pid::osc (o, OscField::Phase)], p[pid::osc (o, OscField::PhaseRandom)], rng);
+    }
 
     filter.reset();
     ampEnv.reset();
@@ -361,7 +399,14 @@ void Voice::updateControl (const VoiceContext& ctx) noexcept
         bp.wave = p.getChoice<AnalogWave> (f (OscField::Wave));
         bp.noise = p.getChoice<NoiseType> (f (OscField::NoiseType));
         bp.algorithm = p.getChoice<FmAlgorithm> (f (OscField::FmAlgorithm));
-        bp.table = ctx.wavetables != nullptr ? &ctx.wavetables->get (p.getInt (f (OscField::Table))) : nullptr;
+        const auto* slot = ctx.assets != nullptr ? &ctx.assets->slots[(size_t) o] : nullptr;
+        const int tableIndex = p.getInt (f (OscField::Table));
+        if (tableIndex == importedWavetableChoice() && slot != nullptr && slot->wavetable != nullptr)
+            bp.table = &slot->wavetable->table;
+        else if (ctx.wavetables != nullptr)
+            bp.table = &ctx.wavetables->get (std::min (tableIndex, ctx.wavetables->size() - 1));
+        if (bp.engine == OscEngine::Sample || bp.engine == OscEngine::Granular)
+            bp.sample = slot != nullptr && slot->sample != nullptr ? slot->sample.get() : &assets::getBuiltInSample();
 
         const float oscPitch = voicePitch
                              + destValue (dest, oscDest (ModDest::Osc1Pitch, o)) * getModDestInfo (ModDest::Osc1Pitch).range
@@ -375,6 +420,15 @@ void Voice::updateControl (const VoiceContext& ctx) noexcept
         bp.detune = dsp::clamp01 (p[f (OscField::Detune)] + destValue (dest, ModDest::UnisonDetune));
         bp.spread = dsp::clamp01 (p[f (OscField::Spread)] + destValue (dest, ModDest::StereoWidth));
         bp.pan = p[f (OscField::Pan)];
+
+        bp.rootHz = dsp::midiNoteToHz ((float) p.getInt (f (OscField::SampleRoot)));
+        bp.loop = p.getBool (f (OscField::SampleLoop));
+        bp.grainSeconds = std::clamp (p[f (OscField::GrainSize)] * std::exp2 (destValue (dest, ModDest::GrainSize) * getModDestInfo (ModDest::GrainSize).range),
+                                      0.005f, 2.0f);
+        bp.grainDensity = std::clamp (p[f (OscField::GrainDensity)] * std::exp2 (destValue (dest, ModDest::GrainDensity) * getModDestInfo (ModDest::GrainDensity).range),
+                                      0.5f, 400.0f);
+        bp.grainSpray = p[f (OscField::GrainSpray)];
+        bp.grainPitchSpray = p[f (OscField::GrainPitchSpray)];
 
         const float fmMod = destValue (dest, oscDest (ModDest::Osc1Fm, o));
 
@@ -406,6 +460,16 @@ void Voice::updateControl (const VoiceContext& ctx) noexcept
         oscSync[(size_t) o] = p.getBool (f (OscField::Sync));
         oscDirect[(size_t) o] = p.getInt (f (OscField::Route)) == 1;
     }
+
+    bool direct = false;
+    for (int o = 0; o < kNumOscillators; ++o)
+        direct = direct || (oscOn[(size_t) o] && oscDirect[(size_t) o]);
+    if (direct && ! anyDirect)
+    {
+        decimators[2].reset();
+        decimators[3].reset();
+    }
+    anyDirect = direct;
 
     // ---- filter ----
     filterOn = p.getBool (pid::filter (FilterField::On));
@@ -487,67 +551,91 @@ void Voice::updateControl (const VoiceContext& ctx) noexcept
     firstBlock = false;
 }
 
+void Voice::renderOscillators (float& filterL, float& filterR, float& directL, float& directR) noexcept
+{
+    filterL = filterR = directL = directR = 0.0f;
+    std::array<float, (size_t) kNumOscillators> mono {};
+    std::array<bool, (size_t) kNumOscillators> wrapped {};
+    std::array<float, (size_t) kNumOscillators> wrapFraction {};
+
+    for (int o = 0; o < kNumOscillators; ++o)
+    {
+        if (! oscOn[(size_t) o])
+            continue;
+
+        // Sources earlier in the chain contribute this sample, later ones their previous sample.
+        const int src = fmSource[(size_t) o];
+        const float fmIn = src < o ? mono[(size_t) src] : lastMono[(size_t) src];
+        const int prev = (o + kNumOscillators - 1) % kNumOscillators;
+
+        float syncFraction = -1.0f;
+        if (oscSync[(size_t) o])
+        {
+            if (prev < o && wrapped[(size_t) prev]) syncFraction = wrapFraction[(size_t) prev];
+            else if (prev > o && lastWrapped[(size_t) prev]) syncFraction = lastWrapFraction[(size_t) prev];
+        }
+
+        auto out = oscillators[(size_t) o].tick (fmDepth[(size_t) o] * fmIn, syncFraction);
+
+        if (ringAmount[(size_t) o] > 0.0f)
+        {
+            const float carrier = prev < o ? mono[(size_t) prev] : lastMono[(size_t) prev];
+            const float ring = dsp::lerp (1.0f, carrier, ringAmount[(size_t) o]);
+            out.left *= ring;
+            out.right *= ring;
+        }
+
+        mono[(size_t) o] = out.mono;
+        wrapped[(size_t) o] = out.wrapped;
+        wrapFraction[(size_t) o] = out.wrapFraction;
+
+        const float level = levelCur[(size_t) o];
+        if (oscDirect[(size_t) o])
+        {
+            directL += out.left * level;
+            directR += out.right * level;
+        }
+        else
+        {
+            filterL += out.left * level;
+            filterR += out.right * level;
+        }
+    }
+
+    lastMono = mono;
+    lastWrapped = wrapped;
+    lastWrapFraction = wrapFraction;
+}
+
 void Voice::renderSamples (const VoiceBuses& buses, int start, int num) noexcept
 {
     for (int i = 0; i < num; ++i)
     {
-        float filterL = 0.0f, filterR = 0.0f, directL = 0.0f, directR = 0.0f;
-        std::array<float, (size_t) kNumOscillators> mono {};
-        std::array<bool, (size_t) kNumOscillators> wrapped {};
-        std::array<float, (size_t) kNumOscillators> wrapFraction {};
-
         for (int o = 0; o < kNumOscillators; ++o)
-        {
-            if (! oscOn[(size_t) o])
-            {
-                levelCur[(size_t) o] += levelStep[(size_t) o];
-                continue;
-            }
-
-            // Sources earlier in the chain contribute this sample, later ones their previous sample.
-            const int src = fmSource[(size_t) o];
-            const float fmIn = src < o ? mono[(size_t) src] : lastMono[(size_t) src];
-            const int prev = (o + kNumOscillators - 1) % kNumOscillators;
-
-            float syncFraction = -1.0f;
-            if (oscSync[(size_t) o])
-            {
-                if (prev < o && wrapped[(size_t) prev]) syncFraction = wrapFraction[(size_t) prev];
-                else if (prev > o && lastWrapped[(size_t) prev]) syncFraction = lastWrapFraction[(size_t) prev];
-            }
-
-            auto out = oscillators[(size_t) o].tick (fmDepth[(size_t) o] * fmIn, syncFraction);
-
-            if (ringAmount[(size_t) o] > 0.0f)
-            {
-                const float carrier = prev < o ? mono[(size_t) prev] : lastMono[(size_t) prev];
-                const float ring = dsp::lerp (1.0f, carrier, ringAmount[(size_t) o]);
-                out.left *= ring;
-                out.right *= ring;
-            }
-
-            mono[(size_t) o] = out.mono;
-            wrapped[(size_t) o] = out.wrapped;
-            wrapFraction[(size_t) o] = out.wrapFraction;
-
             levelCur[(size_t) o] += levelStep[(size_t) o];
-            const float level = levelCur[(size_t) o];
 
-            if (oscDirect[(size_t) o])
+        float filterL = 0.0f, filterR = 0.0f, directL = 0.0f, directR = 0.0f;
+
+        if (oversampling == 1)
+        {
+            renderOscillators (filterL, filterR, directL, directR);
+        }
+        else
+        {
+            // Oscillators (with cross-FM, sync and ring) run at 2x / 4x; the half-band
+            // decimators remove everything above the output band before it can alias.
+            std::array<float, 4> fl {}, fr {}, dl {}, dr {};
+            for (int k = 0; k < oversampling; ++k)
+                renderOscillators (fl[(size_t) k], fr[(size_t) k], dl[(size_t) k], dr[(size_t) k]);
+
+            filterL = decimators[0].process (fl.data(), oversampling);
+            filterR = decimators[1].process (fr.data(), oversampling);
+            if (anyDirect)
             {
-                directL += out.left * level;
-                directR += out.right * level;
-            }
-            else
-            {
-                filterL += out.left * level;
-                filterR += out.right * level;
+                directL = decimators[2].process (dl.data(), oversampling);
+                directR = decimators[3].process (dr.data(), oversampling);
             }
         }
-
-        lastMono = mono;
-        lastWrapped = wrapped;
-        lastWrapFraction = wrapFraction;
 
         filterMixCur += filterMixStep;
         if (filterOn)

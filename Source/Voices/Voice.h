@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DSP/Decimator.h"
 #include "DSP/Envelope.h"
 #include "DSP/VoiceFilter.h"
 #include "MPE/NoteEvents.h"
@@ -69,6 +70,12 @@ public:
 
     void render (const VoiceContext& ctx, const VoiceBuses& buses, int startSample, int numSamples) noexcept;
 
+    /** Makes the next render start with a control update (used when oscillator content is replaced). */
+    void forceControlUpdate() noexcept { samplesUntilControl = 0; }
+
+    /** Oscillator oversampling factor chosen for the current note (1, 2 or 4). */
+    int getOversampling() const noexcept { return oversampling; }
+
     bool isActive() const noexcept { return active; }
     bool isGated() const noexcept { return active && state.gate && ! stealing; }
     bool isStealing() const noexcept { return stealing; }
@@ -92,6 +99,8 @@ private:
     void renderSamples (const VoiceBuses& buses, int start, int num) noexcept;
     const ParamSnapshot& computeMorph (const VoiceContext& ctx) noexcept;
     float tunedPitch (const VoiceContext& ctx, int note) const noexcept;
+    static int chooseOversampling (const VoiceContext& ctx) noexcept;
+    void renderOscillators (float& filterL, float& filterR, float& directL, float& directR) noexcept;
 
     MPEVoiceState state;
     float sampleRate = 44100.0f;
@@ -101,6 +110,9 @@ private:
     int samplesUntilControl = 0;
 
     std::array<Oscillator, (size_t) kNumOscillators> oscillators;
+    int oversampling = 1;
+    bool anyDirect = false;
+    std::array<dsp::OversamplingDecimator, 4> decimators;   // filter L/R, direct L/R
     dsp::VoiceFilter filter;
     dsp::Envelope ampEnv, filterEnv, modEnv;
     std::array<dsp::Lfo, (size_t) kNumLfos> lfos;

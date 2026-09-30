@@ -1,4 +1,5 @@
 #include "Pages.h"
+#include "UI/HelpText.h"
 
 namespace nedd::ui
 {
@@ -20,13 +21,17 @@ struct SettingsPage::Impl : private EditorContext::Listener
           bendQuantize (c, pid::global (GlobalField::BendQuantize), "PITCH QNT", colours::pitch),
           customTuning (c, pid::global (GlobalField::CustomTuning), "Use custom tuning table"),
           quality (c, pid::global (GlobalField::Quality)),
+          oversampling (c, pid::global (GlobalField::OscOversampling)),
           midiOut (c, pid::global (GlobalField::MidiOut), "Send generated notes as MPE MIDI"),
           limiter (c, pid::fx (FxField::LimiterOn), "Output limiter")
     {
         for (auto* comp : std::initializer_list<juce::Component*> { &mpeMode, &bendRange, &masterBend, &pitchSens, &smoothing, &voiceMode, &glideMode,
                                                                     &polyphony, &glide, &scale, &root, &bendQuantize, &customTuning, &quality,
+                                                                    &oversampling, &qualityCaption, &oversamplingCaption,
                                                                     &midiOut, &limiter, &loadScala, &resetTuning })
             owner.addAndMakeVisible (comp);
+        quality.setTooltip (helpForParam (pid::global (GlobalField::Quality)));
+        oversampling.setTooltip (helpForParam (pid::global (GlobalField::OscOversampling)));
 
         const char* names[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         for (int i = 0; i < 12; ++i)
@@ -147,7 +152,8 @@ struct SettingsPage::Impl : private EditorContext::Listener
     ParamChoice scale, root;
     ParamKnob bendQuantize;
     ParamToggle customTuning;
-    ParamChoice quality;
+    ParamChoice quality, oversampling;
+    Caption qualityCaption { "CPU QUALITY" }, oversamplingCaption { "OSCILLATOR OVERSAMPLING (ANTI-ALIASING)" };
     ParamToggle midiOut, limiter;
     juce::TextButton loadScala { "Load Scala (.scl)..." }, resetTuning { "Reset to 12-TET" };
     std::array<juce::TextButton, 12> degree;
@@ -264,7 +270,11 @@ void SettingsPage::resized()
     i.engineCard = middle;
     {
         auto c = i.engineCard.withTrimmedTop (panelTitleHeight).reduced (10, 6);
+        i.qualityCaption.setBounds (c.removeFromTop (16));
         i.quality.setBounds (c.removeFromTop (24));
+        c.removeFromTop (8);
+        i.oversamplingCaption.setBounds (c.removeFromTop (16));
+        i.oversampling.setBounds (c.removeFromTop (24));
         c.removeFromTop (10);
         i.midiOut.setBounds (c.removeFromTop (24));
         c.removeFromTop (6);

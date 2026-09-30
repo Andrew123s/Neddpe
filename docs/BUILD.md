@@ -70,6 +70,7 @@ See [TESTING.md](TESTING.md) for the extra modes (VST3 host validation, benchmar
 | Visual Studio preset, Debug | `build/NeddPE_artefacts/Debug/VST3/NeddPE.vst3` |
 | Ninja Release | `build-ninja/NeddPE_artefacts/Release/VST3/NeddPE.vst3` |
 | Standalone app | `.../NeddPE_artefacts/<Config>/Standalone/NeddPE.exe` |
+| Prebuilt (committed) | `dist/NeddPE.exe`, `dist/NeddPE.vst3` |
 
 `NeddPE.vst3` is a folder (a VST3 bundle); copy the whole folder.
 
@@ -82,7 +83,8 @@ C:\Program Files\Common Files\VST3\
 ```
 
 Or configure with `-DNEDDPE_COPY_PLUGIN=ON` and build from an elevated shell to have CMake do it.
-Before distributing a binary, read the licensing note in the [README](../README.md#licence).
+NeddPE is licensed under the AGPLv3 (see the [README](../README.md#licence)): if you share a binary, make the
+matching source available too.
 
 ## 7. Open it in a DAW
 

@@ -64,6 +64,16 @@ void SynthEngine::beginBlock (const ParamSnapshot& p, const TransportInfo& trans
     const auto* tuning = shared.tuning.acquire();
     const auto* shapes = shared.lfoShapes.acquire();
     const auto* morphTarget = shared.morphTarget.acquire();
+    const auto* assets = shared.assets.acquire();
+
+    // Voices keep pointers into the imported content between control updates; once it has
+    // been replaced, the old content may be freed, so every voice refreshes before rendering.
+    if (assets != currentAssets)
+    {
+        currentAssets = assets;
+        voiceManager.forceControlUpdate();
+    }
+    ctx.assets = assets;
 
     ctx.params = &p;
     ctx.routing = &routing;

@@ -58,9 +58,13 @@ private:
     void editorTick() override;
     void rebuild();
 
+    const Wavetable& currentTable() const;
+    const SampleData& currentSample() const;
+    void paintSample (juce::Graphics& g, juce::Rectangle<float> bounds, juce::Colour colour);
+
     EditorContext& ctx;
     const int oscIndex;
-    std::vector<float> cycle;
+    std::vector<float> cycle;       // one cycle (analog / FM / noise) or a peak overview (sample engines)
     float signature = -1.0f;
     float livePosition = -1.0f;
 };

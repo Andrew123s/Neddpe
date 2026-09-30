@@ -1,5 +1,6 @@
 #include "Wavetable.h"
 #include "DspMath.h"
+#include "Parameters/ParameterDefs.h"
 #include <juce_dsp/juce_dsp.h>
 #include <complex>
 
@@ -110,6 +111,30 @@ namespace
         return std::exp (-0.5f * d * d);
     }
 } // namespace
+
+Wavetable buildWavetableFromFrames (const juce::String& name, const float* frames, int numFrames)
+{
+    juce::dsp::FFT frameFft (kFrameOrder);
+    Wavetable table;
+    table.name = name;
+    table.numFrames = std::max (1, numFrames);
+    table.samples.assign ((size_t) table.numFrames * Wavetable::kNumMips * Wavetable::kFrameStride, 0.0f);
+
+    std::vector<float> buffer ((size_t) Wavetable::kFrameSize * 2);
+    for (int f = 0; f < numFrames; ++f)
+    {
+        std::fill (buffer.begin(), buffer.end(), 0.0f);
+        std::copy (frames + (size_t) f * Wavetable::kFrameSize, frames + (size_t) (f + 1) * Wavetable::kFrameSize, buffer.begin());
+        frameFft.performRealOnlyForwardTransform (buffer.data(), true);
+
+        Harmonics h ((size_t) Wavetable::kMaxHarmonics + 1);
+        for (int k = 1; k <= Wavetable::kMaxHarmonics; ++k)
+            h[(size_t) k] = { buffer[(size_t) k * 2], buffer[(size_t) k * 2 + 1] };
+        renderFrame (table, f, h, frameFft);
+    }
+
+    return table;
+}
 
 juce::StringArray getWavetableNames()
 {
@@ -233,6 +258,7 @@ WavetableBank::WavetableBank()
     });
 
     jassert (tables.size() == (size_t) names.size());
+    jassert (names.size() == kImportedWavetableChoice);
 }
 
 } // namespace nedd

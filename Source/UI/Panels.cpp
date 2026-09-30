@@ -29,17 +29,33 @@ OscillatorPanel::OscillatorPanel (EditorContext& c, int index, bool isCompact)
       op1RatioChoice (c, pid::osc (index, OscField::Op1Ratio)),
       op2RatioChoice (c, pid::osc (index, OscField::Op2Ratio)),
       syncToggle (c, pid::osc (index, OscField::Sync), "Sync"),
+      loopToggle (c, pid::osc (index, OscField::SampleLoop), "Loop"),
       display (c, index)
 {
     titleColour = colours::text;
     for (auto* comp : std::initializer_list<juce::Component*> { &onToggle, &engineChoice, &waveChoice, &tableChoice, &noiseChoice, &algoChoice,
                                                                 &routeChoice, &fmSourceChoice, &op1RatioChoice, &op2RatioChoice, &syncToggle,
-                                                                &display, &fmCaption, &unisonCaption, &operatorCaption })
+                                                                &loopToggle, &importButton, &clearButton, &sourceCaption,
+                                                                &display, &fmCaption, &unisonCaption, &operatorCaption, &grainCaption })
         addChildComponent (comp);
 
     onToggle.setVisible (true);
     engineChoice.setVisible (true);
     display.setVisible (true);
+
+    importButton.setTooltip ("Load an audio file into this oscillator. Wavetable engine: a wavetable file (frames of 2048 samples, "
+                             "Serum-style files included). Granular / Sample engines: any WAV, AIFF, FLAC or OGG up to 60 s. "
+                             "The audio is saved inside presets and projects.");
+    clearButton.setTooltip ("Remove the imported audio from this oscillator (the built-in source is used again).");
+    importButton.onClick = [this] { chooseFile(); };
+    clearButton.onClick = [this]
+    {
+        if (shownEngine == OscEngine::Wavetable)
+            ctx.processor.removeWavetable (oscIndex);
+        else
+            ctx.processor.removeSample (oscIndex);
+    };
+    sourceCaption.setColour (colours::text);
 
     knob (OscField::Octave, "OCT");
     knob (OscField::Semi, "SEMI");
@@ -61,6 +77,11 @@ OscillatorPanel::OscillatorPanel (EditorContext& c, int index, bool isCompact)
     knob (OscField::FmFeedback, "FEEDBK");
     knob (OscField::FmEnvAmount, "ENV");
     knob (OscField::FmKeyTrack, "KEY");
+    knob (OscField::SampleRoot, "ROOT");
+    knob (OscField::GrainSize, "SIZE");
+    knob (OscField::GrainDensity, "DENSITY");
+    knob (OscField::GrainSpray, "SPRAY");
+    knob (OscField::GrainPitchSpray, "PITCH");
 
     ctx.addListener (this);
 }
@@ -77,15 +98,77 @@ ParamKnob& OscillatorPanel::knob (OscField f, const juce::String& label)
     return ref;
 }
 
+void OscillatorPanel::chooseFile()
+{
+    const bool wavetable = shownEngine == OscEngine::Wavetable;
+    chooser = std::make_unique<juce::FileChooser> (wavetable ? "Import a wavetable into OSC " + juce::String (oscIndex + 1)
+                                                             : "Import a sample into OSC " + juce::String (oscIndex + 1),
+                                                   lastDirectory, assets::getAudioFileWildcard());
+
+    juce::Component::SafePointer<OscillatorPanel> safeThis (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [safeThis, wavetable] (const juce::FileChooser& fc)
+                          {
+                              if (safeThis == nullptr)
+                                  return;
+                              const auto file = fc.getResult();
+                              if (file == juce::File())
+                                  return;
+
+                              safeThis->lastDirectory = file.getParentDirectory();
+                              auto& processor = safeThis->ctx.processor;
+                              const auto error = wavetable ? processor.importWavetable (safeThis->oscIndex, file)
+                                                           : processor.importSample (safeThis->oscIndex, file);
+                              if (error.isNotEmpty())
+                                  juce::NativeMessageBox::showAsync (juce::MessageBoxOptions()
+                                                                         .withIconType (juce::MessageBoxIconType::WarningIcon)
+                                                                         .withTitle ("Import failed")
+                                                                         .withMessage (error)
+                                                                         .withButton ("OK"),
+                                                                     nullptr);
+                          });
+}
+
+void OscillatorPanel::updateSourceCaption()
+{
+    const auto& slot = ctx.processor.getOscillatorAssets().slots[(size_t) oscIndex];
+
+    if (shownEngine == OscEngine::Wavetable)
+    {
+        const bool imported = ctx.params().getInt (p (OscField::Table)) == kImportedWavetableChoice;
+        clearButton.setEnabled (slot.wavetable != nullptr);
+        if (imported)
+            sourceCaption.setText (slot.wavetable != nullptr ? slot.wavetable->name + "  (" + juce::String (slot.wavetable->numFrames) + " frames)"
+                                                             : "No wavetable imported: using Basic Shapes");
+        return;
+    }
+
+    clearButton.setEnabled (slot.sample != nullptr);
+    if (slot.sample != nullptr)
+        sourceCaption.setText (slot.sample->name + "  " + juce::String ((double) slot.sample->length / slot.sample->sampleRate, 1) + " s");
+    else
+        sourceCaption.setText (assets::getBuiltInSample().name);
+}
+
 void OscillatorPanel::editorTick()
 {
     const auto engine = ctx.params().getChoice<OscEngine> (p (OscField::Engine));
     const auto wave = ctx.params().getChoice<AnalogWave> (p (OscField::Wave));
-    if (engine != shownEngine || wave != shownWave)
+    const bool tableImported = ctx.params().getInt (p (OscField::Table)) == kImportedWavetableChoice;
+    const int assetsVersion = ctx.processor.getAssetsVersion();
+
+    if (engine != shownEngine || wave != shownWave || tableImported != shownTableImported)
     {
         shownEngine = engine;
         shownWave = wave;
+        shownTableImported = tableImported;
+        shownAssetsVersion = assetsVersion;
         resized();
+    }
+    else if (assetsVersion != shownAssetsVersion)
+    {
+        shownAssetsVersion = assetsVersion;
+        updateSourceCaption();
     }
 }
 
@@ -94,8 +177,13 @@ void OscillatorPanel::resized()
     for (auto& [field, k] : knobs)
         k->setVisible (false);
     for (auto* comp : std::initializer_list<juce::Component*> { &waveChoice, &tableChoice, &noiseChoice, &algoChoice, &routeChoice, &fmSourceChoice,
-                                                                &op1RatioChoice, &op2RatioChoice, &syncToggle, &fmCaption, &unisonCaption, &operatorCaption })
+                                                                &op1RatioChoice, &op2RatioChoice, &syncToggle, &loopToggle, &importButton,
+                                                                &clearButton, &sourceCaption, &fmCaption, &unisonCaption, &operatorCaption,
+                                                                &grainCaption })
         comp->setVisible (false);
+
+    const bool usesSample = shownEngine == OscEngine::Granular || shownEngine == OscEngine::Sample;
+    knobs[OscField::WtPos]->setLabel (shownEngine == OscEngine::Granular ? "POSITION" : shownEngine == OscEngine::Sample ? "START" : "WT POS");
 
     auto bounds = getLocalBounds();
     auto strip = bounds.removeFromTop (panelTitleHeight).reduced (8, 3);
@@ -116,10 +204,38 @@ void OscillatorPanel::resized()
     switch (shownEngine)
     {
         case OscEngine::Analog:    place (waveChoice, selector); break;
-        case OscEngine::Wavetable: place (tableChoice, selector); break;
         case OscEngine::Noise:     place (noiseChoice, selector); break;
         case OscEngine::FM:        place (algoChoice, selector); break;
+        case OscEngine::Wavetable:
+            if (! compact)
+            {
+                place (importButton, selector.removeFromRight (58));
+                selector.removeFromRight (4);
+            }
+            place (tableChoice, selector);
+            break;
+        case OscEngine::Granular:
+        case OscEngine::Sample:
+            if (! compact)
+            {
+                place (clearButton, selector.removeFromRight (48));
+                selector.removeFromRight (4);
+                place (importButton, selector.removeFromRight (58));
+                selector.removeFromRight (6);
+            }
+            place (sourceCaption, selector);
+            break;
     }
+
+    if (! compact && shownEngine == OscEngine::Wavetable && shownTableImported)
+    {
+        r.removeFromTop (2);
+        auto line = r.removeFromTop (18);
+        place (clearButton, line.removeFromRight (48));
+        line.removeFromRight (4);
+        place (sourceCaption, line);
+    }
+    updateSourceCaption();
     r.removeFromTop (6);
 
     const int knobHeight = compact ? 56 : 60;
@@ -142,18 +258,16 @@ void OscillatorPanel::resized()
         }
     };
 
-    const OscField shape = shownEngine == OscEngine::Wavetable ? OscField::WtPos
+    const OscField shape = shownEngine == OscEngine::Wavetable || usesSample ? OscField::WtPos
                          : shownEngine == OscEngine::FM ? OscField::Op1Amount
                          : OscField::PulseWidth;
 
     if (compact)
     {
-        show ({ OscField::Level, shape, OscField::Semi, OscField::Detune }, row());
+        const OscField second = shownEngine == OscEngine::Granular ? OscField::GrainSize : OscField::Detune;
+        show ({ OscField::Level, shape, OscField::Semi, second }, row());
         show ({ OscField::Unison, OscField::Pan, OscField::FmAmount, OscField::Fine }, row());
-        if (shownEngine == OscEngine::Analog && shownWave != AnalogWave::Pulse)
-            knobs[OscField::PulseWidth]->setEnabled (false);
-        else
-            knobs[OscField::PulseWidth]->setEnabled (true);
+        knobs[OscField::PulseWidth]->setEnabled (! (shownEngine == OscEngine::Analog && shownWave != AnalogWave::Pulse));
         return;
     }
 
@@ -177,16 +291,32 @@ void OscillatorPanel::resized()
         r.removeFromTop (4);
         show ({ OscField::Op1Amount, OscField::Op2Amount, OscField::OpFine, OscField::FmFeedback, OscField::FmEnvAmount, OscField::FmKeyTrack }, row(), 56);
     }
+    else if (shownEngine == OscEngine::Granular)
+    {
+        place (grainCaption, r.removeFromTop (16));
+        show ({ OscField::WtPos, OscField::GrainSize, OscField::GrainDensity, OscField::GrainSpray, OscField::GrainPitchSpray }, row());
+    }
+    else if (shownEngine == OscEngine::Sample)
+    {
+        auto sampleRow = row();
+        place (loopToggle, sampleRow.removeFromRight (64).withSizeKeepingCentre (64, 20));
+        show ({ OscField::WtPos, OscField::SampleRoot }, sampleRow);
+    }
 
-    if (shownEngine != OscEngine::Noise)
+    if (shownEngine == OscEngine::Noise)
     {
         place (unisonCaption, r.removeFromTop (16));
-        show ({ OscField::Unison, OscField::Detune, OscField::Spread, OscField::Phase, OscField::PhaseRandom }, row());
+        show ({ OscField::Spread }, row());
+    }
+    else if (shownEngine == OscEngine::Granular)
+    {
+        place (unisonCaption, r.removeFromTop (16));
+        show ({ OscField::SampleRoot, OscField::Spread }, row());
     }
     else
     {
         place (unisonCaption, r.removeFromTop (16));
-        show ({ OscField::Spread }, row());
+        show ({ OscField::Unison, OscField::Detune, OscField::Spread, OscField::Phase, OscField::PhaseRandom }, row());
     }
 
     place (fmCaption, r.removeFromTop (16));

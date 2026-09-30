@@ -34,6 +34,12 @@
     <PARAM id="osc1_fmfb" value="0.0"/>
     <PARAM id="osc1_fmenv" value="0.0"/>
     <PARAM id="osc1_fmkt" value="0.0"/>
+    <PARAM id="osc1_root" value="60.0"/>
+    <PARAM id="osc1_loop" value="1.0"/>
+    <PARAM id="osc1_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc1_gdensity" value="30.0"/>
+    <PARAM id="osc1_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc1_gpitch" value="0.0"/>
     <PARAM id="osc2_on" value="1.0"/>
     <PARAM id="osc2_engine" value="0.0"/>
     <PARAM id="osc2_wave" value="0.0"/>
@@ -65,6 +71,12 @@
     <PARAM id="osc2_fmfb" value="0.0"/>
     <PARAM id="osc2_fmenv" value="0.0"/>
     <PARAM id="osc2_fmkt" value="0.0"/>
+    <PARAM id="osc2_root" value="60.0"/>
+    <PARAM id="osc2_loop" value="1.0"/>
+    <PARAM id="osc2_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc2_gdensity" value="30.0"/>
+    <PARAM id="osc2_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc2_gpitch" value="0.0"/>
     <PARAM id="osc3_on" value="0.0"/>
     <PARAM id="osc3_engine" value="0.0"/>
     <PARAM id="osc3_wave" value="2.0"/>
@@ -96,6 +108,12 @@
     <PARAM id="osc3_fmfb" value="0.0"/>
     <PARAM id="osc3_fmenv" value="0.0"/>
     <PARAM id="osc3_fmkt" value="0.0"/>
+    <PARAM id="osc3_root" value="60.0"/>
+    <PARAM id="osc3_loop" value="1.0"/>
+    <PARAM id="osc3_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc3_gdensity" value="30.0"/>
+    <PARAM id="osc3_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc3_gpitch" value="0.0"/>
     <PARAM id="flt_on" value="1.0"/>
     <PARAM id="flt_type" value="6.0"/>
     <PARAM id="flt_cutoff" value="900.0"/>
@@ -266,6 +284,7 @@
     <PARAM id="morph_on" value="0.0"/>
     <PARAM id="morph_pos" value="0.0"/>
     <PARAM id="midi_out" value="0.0"/>
+    <PARAM id="osc_oversampling" value="1.0"/>
     <PARAM id="dist_on" value="1.0"/>
     <PARAM id="dist_type" value="0.0"/>
     <PARAM id="dist_drive" value="0.25"/>

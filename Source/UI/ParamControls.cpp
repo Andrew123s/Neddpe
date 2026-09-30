@@ -48,6 +48,7 @@ juce::PopupMenu createModDestMenu (int idOffset)
     range (ModDest::Pitch, ModDest::Osc3Pitch);
     m.addSectionHeader ("Oscillators");
     range (ModDest::Osc1WtPos, ModDest::StereoWidth);
+    range (ModDest::GrainSize, ModDest::GrainDensity);
     m.addSectionHeader ("Filter");
     range (ModDest::FilterCutoff, ModDest::FilterMix);
     m.addSectionHeader ("Amp");

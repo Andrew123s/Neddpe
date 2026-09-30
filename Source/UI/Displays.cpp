@@ -257,10 +257,11 @@ void WaveDisplay::editorTick()
     int prime = 1;
     for (auto f : { OscField::On, OscField::Engine, OscField::Wave, OscField::PulseWidth, OscField::Table, OscField::WtPos,
                     OscField::NoiseType, OscField::FmAlgorithm, OscField::Op1Ratio, OscField::Op2Ratio, OscField::OpFine,
-                    OscField::Op1Amount, OscField::Op2Amount, OscField::FmFeedback })
+                    OscField::Op1Amount, OscField::Op2Amount, OscField::FmFeedback, OscField::GrainSpray, OscField::SampleLoop })
     {
         sig += ctx.param (pid::osc (oscIndex, f)) * (float) (prime += 7);
     }
+    sig += (float) ctx.processor.getAssetsVersion() * 1000.0f;
 
     float live = -1.0f;
     if (ctx.hasActiveVoice())
@@ -283,6 +284,22 @@ void WaveDisplay::editorTick()
     livePosition = live;
 }
 
+const Wavetable& WaveDisplay::currentTable() const
+{
+    const int index = ctx.params().getInt (pid::osc (oscIndex, OscField::Table));
+    const auto& slot = ctx.processor.getOscillatorAssets().slots[(size_t) oscIndex];
+    if (index == kImportedWavetableChoice && slot.wavetable != nullptr)
+        return slot.wavetable->table;
+    const auto& bank = WavetableBank::getInstance();
+    return bank.get (std::min (index, bank.size() - 1));
+}
+
+const SampleData& WaveDisplay::currentSample() const
+{
+    const auto& slot = ctx.processor.getOscillatorAssets().slots[(size_t) oscIndex];
+    return slot.sample != nullptr ? *slot.sample : assets::getBuiltInSample();
+}
+
 void WaveDisplay::rebuild()
 {
     constexpr int kPoints = 256;
@@ -291,6 +308,24 @@ void WaveDisplay::rebuild()
     const auto engine = ctx.params().getChoice<OscEngine> (pid::osc (oscIndex, OscField::Engine));
     if (engine == OscEngine::Wavetable)
         return;
+
+    if (engine == OscEngine::Granular || engine == OscEngine::Sample)
+    {
+        // Peak overview of the whole sample.
+        const auto& s = currentSample();
+        const float* left = s.channel (0);
+        const float* right = s.channel (1);
+        for (int i = 0; i < kPoints; ++i)
+        {
+            const int from = (int) ((juce::int64) s.length * i / kPoints);
+            const int to = std::max (from + 1, (int) ((juce::int64) s.length * (i + 1) / kPoints));
+            float peak = 0.0f;
+            for (int n = from; n < std::min (to, s.length); ++n)
+                peak = std::max (peak, std::max (std::abs (left[n]), std::abs (right[n])));
+            cycle[(size_t) i] = peak;
+        }
+        return;
+    }
 
     Oscillator osc;
     osc.prepare (48000.0f);
@@ -334,9 +369,15 @@ void WaveDisplay::paint (juce::Graphics& g)
     const auto colour = on ? colours::accent : colours::textFaint;
     const auto engine = p.getChoice<OscEngine> (pid::osc (oscIndex, OscField::Engine));
 
+    if (engine == OscEngine::Granular || engine == OscEngine::Sample)
+    {
+        paintSample (g, bounds, colour);
+        return;
+    }
+
     if (engine == OscEngine::Wavetable)
     {
-        const auto& table = WavetableBank::getInstance().get (p.getInt (pid::osc (oscIndex, OscField::Table)));
+        const auto& table = currentTable();
         const float position = p[pid::osc (oscIndex, OscField::WtPos)];
         constexpr int layers = 12;
         const auto area = bounds.reduced (8.0f, 8.0f);
@@ -388,6 +429,56 @@ void WaveDisplay::paint (juce::Graphics& g)
     }
     g.setColour (colour);
     g.strokePath (path, juce::PathStrokeType (1.8f));
+}
+
+void WaveDisplay::paintSample (juce::Graphics& g, juce::Rectangle<float> bounds, juce::Colour colour)
+{
+    const auto& p = ctx.params();
+    const auto engine = p.getChoice<OscEngine> (pid::osc (oscIndex, OscField::Engine));
+    const auto area = bounds.reduced (6.0f, 8.0f);
+    if (cycle.empty())
+        return;
+
+    float peak = 0.001f;
+    for (auto v : cycle)
+        peak = std::max (peak, v);
+
+    juce::Path wave;
+    const float centre = area.getCentreY();
+    const float half = area.getHeight() * 0.45f;
+    wave.startNewSubPath (area.getX(), centre);
+    for (size_t i = 0; i < cycle.size(); ++i)
+        wave.lineTo (area.getX() + area.getWidth() * (float) i / (float) (cycle.size() - 1), centre - cycle[i] / peak * half);
+    for (size_t i = cycle.size(); i-- > 0;)
+        wave.lineTo (area.getX() + area.getWidth() * (float) i / (float) (cycle.size() - 1), centre + cycle[i] / peak * half);
+    wave.closeSubPath();
+    g.setColour (colour.withAlpha (0.35f));
+    g.fillPath (wave);
+
+    const float position = p[pid::osc (oscIndex, OscField::WtPos)];
+    auto xFor = [&area] (float pos) { return area.getX() + area.getWidth() * juce::jlimit (0.0f, 1.0f, pos); };
+
+    if (engine == OscEngine::Granular)
+    {
+        // Region the grains are read from: position +- spray.
+        const float spray = p[pid::osc (oscIndex, OscField::GrainSpray)] * 0.15f;
+        const float x0 = xFor (position - spray), x1 = xFor (position + spray);
+        g.setColour (colour.withAlpha (0.18f));
+        g.fillRect (juce::Rectangle<float> (x0, area.getY(), std::max (2.0f, x1 - x0), area.getHeight()));
+    }
+    else if (p.getBool (pid::osc (oscIndex, OscField::SampleLoop)))
+    {
+        g.setColour (colour.withAlpha (0.12f));
+        g.fillRect (juce::Rectangle<float> (xFor (position), area.getY(), area.getRight() - xFor (position), area.getHeight()));
+    }
+
+    g.setColour (colour);
+    g.drawVerticalLine ((int) xFor (position), area.getY(), area.getBottom());
+    if (livePosition >= 0.0f)
+    {
+        g.setColour (colours::modulation);
+        g.drawVerticalLine ((int) xFor (livePosition), area.getY(), area.getBottom());
+    }
 }
 
 // =============================================================================================
