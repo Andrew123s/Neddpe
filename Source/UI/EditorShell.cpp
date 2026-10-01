@@ -76,10 +76,16 @@ void HeaderBar::editorTick()
 void HeaderBar::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
-    g.setGradientFill (juce::ColourGradient (colours::panel.brighter (0.03f), 0.0f, 0.0f, colours::background, 0.0f, bounds.getBottom(), false));
+    g.setGradientFill (juce::ColourGradient (colours::panel, 0.0f, 0.0f, colours::panel.interpolatedWith (colours::background, 0.6f), 0.0f, bounds.getBottom(), false));
     g.fillRect (bounds);
     g.setColour (colours::outline);
     g.drawHorizontalLine ((int) bounds.getBottom() - 1, 0.0f, bounds.getRight());
+    // A thin rose hairline under the header.
+    juce::ColourGradient line (colours::accentLight.withAlpha (0.0f), 0.0f, 0.0f, colours::accentLight.withAlpha (0.0f), bounds.getRight(), 0.0f, false);
+    line.addColour (0.3, colours::accentLight);
+    line.addColour (0.7, colours::accent.withAlpha (0.6f));
+    g.setGradientFill (line);
+    g.fillRect (juce::Rectangle<float> (0.0f, bounds.getBottom() - 2.0f, bounds.getRight(), 1.0f));
 
     drawLogo (g, bounds.withWidth (190.0f).reduced (14.0f, 14.0f));
 
@@ -126,30 +132,28 @@ int NavRail::itemAt (juce::Point<int> p) const
 
 void NavRail::paint (juce::Graphics& g)
 {
-    g.fillAll (colours::background);
-    g.setColour (colours::outline);
-    g.drawVerticalLine (getWidth() - 1, 0.0f, (float) getHeight());
-
     for (size_t i = 0; i < items.size(); ++i)
     {
         const auto r = juce::Rectangle<int> (0, 10 + (int) i * itemHeight, getWidth() - 1, itemHeight);
         const bool selected = items[i].id == current;
         const bool over = (int) i == hover;
+        const auto pill = r.reduced (8, 3).toFloat();
 
-        if (selected || over)
-        {
-            g.setColour (selected ? colours::raised : colours::panel);
-            g.fillRect (r.reduced (6, 2).toFloat());
-        }
         if (selected)
         {
-            g.setColour (colours::accent);
-            g.fillRoundedRectangle (juce::Rectangle<float> (6.0f, (float) r.getY() + 9.0f, 3.0f, (float) itemHeight - 18.0f), 1.5f);
+            drawSoftShadow (g, pill, pill.getHeight() * 0.5f, 0.8f);
+            g.setGradientFill (roseGradient (pill));
+            g.fillRoundedRectangle (pill, pill.getHeight() * 0.5f);
+        }
+        else if (over)
+        {
+            g.setColour (colours::panel.withAlpha (0.8f));
+            g.fillRoundedRectangle (pill, pill.getHeight() * 0.5f);
         }
 
-        g.setColour (selected ? colours::text : (over ? colours::text.withAlpha (0.8f) : colours::textDim));
-        g.setFont (displayFont (14.0f));
-        g.drawText (items[i].name, r.withTrimmedLeft (20), juce::Justification::centredLeft);
+        g.setColour (selected ? colours::panel : (over ? colours::accent : colours::textDim));
+        g.setFont (displayFont (13.0f));
+        g.drawText (items[i].name, r.withTrimmedLeft (22), juce::Justification::centredLeft);
     }
 }
 
@@ -200,13 +204,16 @@ PerformanceStrip::~PerformanceStrip() { ctx.removeListener (this); }
 
 void PerformanceStrip::paint (juce::Graphics& g)
 {
-    g.fillAll (colours::background);
+    const auto bounds = getLocalBounds().toFloat();
+    g.setGradientFill (juce::ColourGradient (colours::panel.interpolatedWith (colours::background, 0.4f), 0.0f, 0.0f,
+                                             colours::panel, 0.0f, bounds.getBottom(), false));
+    g.fillRect (bounds);
     g.setColour (colours::outline);
     g.drawHorizontalLine (0, 0.0f, (float) getWidth());
 
-    g.setColour (colours::textFaint);
+    g.setColour (colours::textDim);
     g.setFont (displayFont (11.0f));
-    g.drawText ("MACROS", juce::Rectangle<int> (14, 6, 80, 14), juce::Justification::centredLeft);
+    g.drawText ("MACROS", juce::Rectangle<int> (16, 6, 80, 14), juce::Justification::centredLeft);
 }
 
 void PerformanceStrip::editorTick()

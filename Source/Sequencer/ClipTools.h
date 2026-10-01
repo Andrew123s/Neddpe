@@ -18,6 +18,9 @@ public:
     NoteClip finish (double endBeat);
 
     bool isActive() const noexcept { return active; }
+
+    /** What has been recorded so far, with held notes drawn up to `nowBeat` (for live display). */
+    NoteClip preview (double nowBeat) const;
     int getOpenNoteCount() const noexcept { return (int) open.size(); }
 
 private:

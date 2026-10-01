@@ -16,7 +16,8 @@ reverb.
   (10 procedurally generated, mip-mapped tables with smooth scanning, or **your own imported wavetable**),
   **3-operator FM** (3 algorithms, ratios, fine ratio, feedback, envelope amount, key tracking), **Noise** (white,
   pink, brown, crackle, digital), **Granular** (up to 32 grains: position, size, density, position and pitch spray)
-  or **Sample** (pitched playback, one-shot or cross-faded loop)
+  or **Sample** (pitched playback, one-shot or cross-faded loop); six built-in sources for those two (Vowel Drift,
+  Glass Bloom, Night Choir, Breath Air, Bell Cloud, Deep Drone), generated at start-up
 - **Import** WAV / AIFF / FLAC / OGG files as wavetables (Serum-style frame markers understood) or as samples for the
   granular and sample engines; imported audio is saved inside presets and projects
 - Up to 8-voice unison per oscillator with detune and stereo spread, rendered four sub-voices at a time with SIMD;
@@ -54,14 +55,17 @@ reverb.
 - Arpeggiator (up, down, up/down, random, order, chord, custom pattern; octaves, gate, swing, ratchet, repeat,
   accent, probability). Arp notes keep following the key that produced them.
 - 32-step sequencer: note, velocity, gate, per-step MPE pressure and slide, pitch glide, probability, ratchet, accent
-- **Performance recorder + MPE note editor**: record live MPE, then edit notes and draw per-note pitch, pressure and
-  slide curves (draw/select/erase, move/resize, copy/paste/duplicate, quantize, humanize, undo/redo)
+- **Performance recorder + MPE note editor**: record live MPE, or draw notes as lines: drag to draw a note and
+  move up or down to draw its pitch glide, then reshape it by its nodes. Velocity, pressure, slide and release
+  velocity are shown as envelopes around each line and painted in the lane below (copy/paste/duplicate, quantize,
+  humanize, undo/redo)
 - MPE MIDI out for generated notes
 
 **Effects**: distortion (5 types, oversampled 1-8x), saturation, bitcrush, chorus, phaser, flanger, stereo/ping-pong
 delay and an FDN reverb (both fed by **per-note sends**), 3-band EQ, compressor, output limiter.
 
-**Sound management**: 37 factory presets in 10 categories, user presets with categories, favourites and search,
+**Sound management**: 58 factory presets in 13 categories (including 21 Dreamy, Dark and Ethereal sounds built on
+granular textures, slow modulation and deep effects), user presets with categories, favourites and search,
 intelligent randomise (full / oscillators / filter / modulation / MPE / effects / texture), mutation with history,
 A/B morph with per-note morph position, full undo/redo, complete state recall in the DAW.
 
@@ -82,6 +86,12 @@ Prebuilt Windows x64 binaries of the current version are in [`dist/`](dist):
 
 If Windows SmartScreen warns about an unrecognised app, choose *More info > Run anyway* (the binaries are not
 code-signed). The Visual C++ runtime is linked statically, so nothing else needs installing.
+
+## Interface
+
+White and rose design with the rounded Nunito typeface (embedded; SIL Open Font License, see
+`Resources/Fonts/OFL.txt`). Every knob shows its value, the reach of its modulation and, for the most recent note,
+where modulation puts it right now.
 
 ## Build
 
@@ -128,6 +138,12 @@ Release and Debug with no JUCE assertions, and the VST3 passed host-level valida
 sample import, AGPLv3 licence) builds without warnings but **has not been run through the test suite or the
 benchmark yet**. Run `ctest --preset release` and `NeddPETests.exe --bench` to check it; the performance table in
 [TESTING.md](docs/TESTING.md#performance) is still the 0.1 measurement.
+
+**Version 0.3** (white and rose interface, line-based note editor with drawn pitch glides, note-editor toolbar
+fixes, 21 Dreamy / Dark / Ethereal presets, six built-in granular sources, a fix for the wavefolder's level
+compensation) builds without warnings. The note editor's DRAW, DUPLICATE, COPY, PASTE, QUANTIZE and REC were
+exercised by hand in the standalone app, and every factory preset was rendered and level-checked
+(`--render-presets`); the unit-test suite and the benchmark have not been re-run.
 
 Not done yet (the architecture has room for each; see [ARCHITECTURE.md](docs/ARCHITECTURE.md#extension-points)):
 

@@ -124,6 +124,10 @@ public:
     void clipPlay();
     void clipStop();
     void clipRecord (bool overdub);
+    /** Ends a recording but keeps the clip playing. */
+    void clipStopRecording();
+    /** Notes recorded so far while a recording is running (empty otherwise). */
+    NoteClip getRecordingPreview() const;
     void setClipLoop (bool loop) { shared.clipLoop.store (loop); }
     bool getClipLoop() const { return shared.clipLoop.load(); }
     void setClipSyncToHost (bool sync) { shared.clipSyncToHost.store (sync); }

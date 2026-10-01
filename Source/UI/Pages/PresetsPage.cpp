@@ -432,8 +432,8 @@ private:
         const bool current = filtered[(size_t) row] == ctx.processor.getPresetManager().getCurrentIndex();
         if (rowIsSelected || current)
         {
-            g.setColour (rowIsSelected ? colours::raised : colours::panel.brighter (0.04f));
-            g.fillRect (0, 0, width, height);
+            g.setColour (rowIsSelected ? colours::accentSoft : colours::control);
+            g.fillRoundedRectangle (juce::Rectangle<float> (2.0f, 1.0f, (float) width - 4.0f, (float) height - 2.0f), 6.0f);
         }
         g.setColour (e.favourite ? colours::amber : colours::textFaint.withAlpha (0.4f));
         g.setFont (font (14.0f));

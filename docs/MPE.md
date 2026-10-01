@@ -101,9 +101,24 @@ If the controller sends an MCM and RPN 0, NeddPE follows them automatically.
 ## Recording and editing performances
 
 NOTE EDITOR > **REC** records live MPE: every note keeps its own pitch, pressure and slide curves (thinned to the
-points that matter). Recordings can overdub a looping clip. The piano roll draws pressure inside each note and the
-real bend as a line; the expression lane below redraws pitch, pressure, slide or velocity per note. Clips play back
-through the same per-note path and can be sent to other instruments with MPE MIDI out.
+points that matter). Recorded notes appear while you play; click **STOP REC** to finish (playback continues).
+Recordings can overdub a looping clip. Clips play back through the same per-note path and can be sent to other
+instruments with MPE MIDI out.
+
+The roll draws every note as a **line**: its sounding pitch over time, with nodes where the line bends. Around the
+line, translucent envelopes show velocity (attack triangle), pressure (above), slide (below) and release velocity
+(end triangle); click the legend to show or hide each one.
+
+| Action | How |
+|---|---|
+| Draw a note | DRAW tool: press and drag. Moving up or down while dragging draws the pitch line (Shift: flat, Ctrl: semitones, Alt: off-grid). The line is simplified into a few nodes |
+| Reshape the pitch line | Drag a node; double-click the line to add a node, a node to remove it |
+| Move / resize | Drag the line / drag the end node |
+| Expression | The lane below paints pitch, pressure, slide or velocity for the notes under the stroke (selected notes win where notes overlap); right-click a note for quick shapes (pressure swell or fade, slide rise, flatten) |
+| QUANTIZE, HUMANIZE, DUPLICATE, COPY | Work on the selected notes, or on all notes when nothing is selected. Each shows what it did next to the toolbar |
+| PASTE | At the marker in the ruler (click the ruler to move it), or at the playhead while playing. The clip grows if needed |
+| HOST SYNC | Plays the clip with the DAW transport, locked to its bars (PLAY/STOP are then disabled). The standalone app has no DAW transport |
+| Keys | D / S / E tools, Q quantize, Ctrl+C / V / D / A / Z / Y, Delete, Space play/stop |
 
 ## MPE MIDI out
 

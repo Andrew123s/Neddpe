@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NeddPE VERSION 0.2.0 LANGUAGES C CXX)
+project(NeddPE VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,6 +40,16 @@ list(FILTER NEDDPE_CORE_SOURCES EXCLUDE REGEX ".*/Source/Tests/.*")
 file(GLOB_RECURSE NEDDPE_TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/Tests/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/Tests/*.h")
+
+# Embedded resources: the Nunito UI typeface (SIL Open Font License, see Resources/Fonts/OFL.txt).
+juce_add_binary_data(NeddPEResources
+    NAMESPACE NeddPEBinary
+    HEADER_NAME NeddPEBinaryData.h
+    SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Fonts/Nunito-Regular.ttf"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Fonts/Nunito-SemiBold.ttf"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Fonts/Nunito-ExtraBold.ttf")
+set_target_properties(NeddPEResources PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(NEDDPE_JUCE_MODULES
     juce::juce_audio_utils
@@ -86,6 +96,7 @@ target_include_directories(NeddPE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 target_compile_definitions(NeddPE PUBLIC ${NEDDPE_COMMON_DEFINITIONS})
 target_link_libraries(NeddPE
     PRIVATE ${NEDDPE_JUCE_MODULES}
+            NeddPEResources
     PUBLIC juce::juce_recommended_config_flags
            juce::juce_recommended_lto_flags
            juce::juce_recommended_warning_flags)
@@ -109,6 +120,7 @@ if(NEDDPE_BUILD_TESTS)
     target_compile_definitions(NeddPETests PRIVATE ${NEDDPE_COMMON_DEFINITIONS} NEDDPE_TESTS=1 JUCE_PLUGINHOST_VST3=1 JUCE_LOG_ASSERTIONS=1)
     target_link_libraries(NeddPETests
         PRIVATE ${NEDDPE_JUCE_MODULES}
+                NeddPEResources
                 juce::juce_recommended_config_flags
                 juce::juce_recommended_warning_flags)
     if(MSVC)

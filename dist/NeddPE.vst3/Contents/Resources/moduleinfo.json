@@ -1,6 +1,6 @@
 {
   "Name": "NeddPE",
-  "Version": "0.2.0",
+  "Version": "0.3.0",
   "Factory Info": {
     "Vendor": "Nedd Audio",
     "URL": "https://github.com/Andrew123s/Neddpe",
@@ -17,7 +17,7 @@
       "Category": "Audio Module Class",
       "Name": "NeddPE",
       "Vendor": "Nedd Audio",
-      "Version": "0.2.0",
+      "Version": "0.3.0",
       "SDKVersion": "VST 3.7.12",
       "Sub Categories": [
         "Instrument",
@@ -33,7 +33,7 @@
       "Category": "Component Controller Class",
       "Name": "NeddPE",
       "Vendor": "Nedd Audio",
-      "Version": "0.2.0",
+      "Version": "0.3.0",
       "SDKVersion": "VST 3.7.12",
       "Sub Categories": [
         "Instrument",

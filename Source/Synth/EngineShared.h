@@ -35,7 +35,7 @@ struct ControllerEvent
 };
 
 /** Clip transport commands sent from the UI to the audio thread. */
-enum class ClipCommand : int { None = 0, Play, Stop, Record };
+enum class ClipCommand : int { None = 0, Play, Stop, Record, StopRecord };
 
 /**
     State shared between the message thread (processor / editor) and the audio engine.

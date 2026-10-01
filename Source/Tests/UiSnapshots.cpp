@@ -61,18 +61,32 @@ int renderUiSnapshots (const juce::File& directory)
 
     // A short expressive clip so the note editor has something to show.
     NoteClip clip;
-    clip.lengthBeats = 8.0;
-    const int notes[] = { 60, 63, 67, 70, 72, 67 };
-    for (int i = 0; i < 6; ++i)
+    clip.lengthBeats = 16.0;
+    struct Demo { int note; double start, length; float velocity; ExprCurve pitch; };
+    const Demo demo[] = {
+        { 48, 0.0, 3.0, 0.9f, { { 0.0f, 0.0f }, { 1.5f, 0.0f }, { 2.2f, 7.0f }, { 3.0f, 7.0f } } },
+        { 60, 0.5, 2.5, 0.6f, {} },
+        { 63, 1.0, 2.0, 0.55f, { { 0.0f, 0.0f }, { 1.4f, 0.0f }, { 2.0f, -1.0f } } },
+        { 67, 4.0, 3.5, 0.8f, { { 0.0f, 0.0f }, { 0.6f, 5.0f }, { 2.5f, 5.0f }, { 3.5f, 0.0f } } },
+        { 55, 4.5, 3.0, 0.7f, {} },
+        { 70, 8.0, 1.0, 0.65f, {} },
+        { 72, 9.0, 1.0, 0.75f, {} },
+        { 74, 10.0, 2.0, 0.85f, { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 2.0f, -12.0f } } },
+        { 50, 8.0, 4.0, 0.6f, {} },
+        { 62, 12.5, 3.0, 0.7f, { { 0.0f, -3.0f }, { 0.8f, 0.0f } } },
+    };
+    for (const auto& d : demo)
     {
         ClipNote n;
-        n.noteNumber = notes[i];
-        n.start = i * 1.25;
-        n.length = 1.1 + 0.3 * (i % 2);
-        n.velocity = 0.5f + 0.08f * (float) i;
-        n.pressure = { { 0.0f, 0.1f }, { 0.4f, 0.8f }, { (float) n.length, 0.3f } };
-        n.slide = { { 0.0f, 0.2f }, { (float) n.length, 0.9f } };
-        if (i == 2) n.pitch = { { 0.0f, 0.0f }, { 0.5f, 0.0f }, { 1.0f, 2.0f } };
+        n.noteNumber = d.note;
+        n.start = d.start;
+        n.length = d.length;
+        n.velocity = d.velocity;
+        n.releaseVelocity = 0.4f;
+        n.pitch = d.pitch;
+        const float len = (float) d.length;
+        n.pressure = { { 0.0f, 0.15f }, { len * 0.35f, 0.85f }, { len, 0.35f } };
+        n.slide = { { 0.0f, 0.1f }, { len, 0.6f } };
         clip.addNote (n);
     }
     processor->setClip (clip);

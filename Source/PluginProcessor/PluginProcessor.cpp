@@ -538,6 +538,19 @@ void NeddPEAudioProcessor::clipRecord (bool overdub)
     shared.clipCommand.store ((int) ClipCommand::Record);
 }
 
+void NeddPEAudioProcessor::clipStopRecording()
+{
+    if (! recorder.isActive())
+        return;
+    recordStopPending = true;
+    shared.clipCommand.store ((int) ClipCommand::StopRecord);
+}
+
+NoteClip NeddPEAudioProcessor::getRecordingPreview() const
+{
+    return recorder.isActive() ? recorder.preview (shared.telemetry.clipPosition.load()) : NoteClip();
+}
+
 void NeddPEAudioProcessor::serviceRecorder()
 {
     RecordedEvent e;

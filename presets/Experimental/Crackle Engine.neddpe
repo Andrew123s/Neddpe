@@ -40,6 +40,7 @@
     <PARAM id="osc1_gdensity" value="30.0"/>
     <PARAM id="osc1_gspray" value="0.1000000014901161"/>
     <PARAM id="osc1_gpitch" value="0.0"/>
+    <PARAM id="osc1_source" value="0.0"/>
     <PARAM id="osc2_on" value="1.0"/>
     <PARAM id="osc2_engine" value="3.0"/>
     <PARAM id="osc2_wave" value="2.0"/>
@@ -51,7 +52,7 @@
     <PARAM id="osc2_fine" value="0.0"/>
     <PARAM id="osc2_phase" value="0.0"/>
     <PARAM id="osc2_phrand" value="0.0"/>
-    <PARAM id="osc2_level" value="0.8999999761581421"/>
+    <PARAM id="osc2_level" value="0.6000000238418579"/>
     <PARAM id="osc2_pan" value="0.0"/>
     <PARAM id="osc2_unison" value="1.0"/>
     <PARAM id="osc2_detune" value="0.2000000029802322"/>
@@ -77,6 +78,7 @@
     <PARAM id="osc2_gdensity" value="30.0"/>
     <PARAM id="osc2_gspray" value="0.1000000014901161"/>
     <PARAM id="osc2_gpitch" value="0.0"/>
+    <PARAM id="osc2_source" value="0.0"/>
     <PARAM id="osc3_on" value="1.0"/>
     <PARAM id="osc3_engine" value="0.0"/>
     <PARAM id="osc3_wave" value="0.0"/>
@@ -114,6 +116,7 @@
     <PARAM id="osc3_gdensity" value="30.0"/>
     <PARAM id="osc3_gspray" value="0.1000000014901161"/>
     <PARAM id="osc3_gpitch" value="0.0"/>
+    <PARAM id="osc3_source" value="0.0"/>
     <PARAM id="flt_on" value="1.0"/>
     <PARAM id="flt_type" value="0.0"/>
     <PARAM id="flt_cutoff" value="4000.0"/>
@@ -123,7 +126,7 @@
     <PARAM id="flt_env" value="0.0"/>
     <PARAM id="flt_vel" value="0.300000011920929"/>
     <PARAM id="flt_mix" value="1.0"/>
-    <PARAM id="amp_level" value="0.5"/>
+    <PARAM id="amp_level" value="0.4000000059604645"/>
     <PARAM id="amp_vel" value="0.6000000238418579"/>
     <PARAM id="amp_pressure" value="0.0"/>
     <PARAM id="amp_pan" value="0.0"/>

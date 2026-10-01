@@ -66,6 +66,13 @@ void PresetManager::rescan()
             e.name = xml->getStringAttribute ("preset", file.getFileNameWithoutExtension());
             e.category = xml->getStringAttribute ("category", "User");
             e.author = xml->getStringAttribute ("author");
+
+            // Exported copies of factory presets (e.g. the repository's presets/ folder when it sits in
+            // the user preset folder) would list every factory sound twice.
+            const bool factoryCopy = e.author == "NeddPE Factory" && std::any_of (factory.begin(), factory.end(),
+                                         [&e] (const FactoryPreset& f) { return e.name == f.name; });
+            if (factoryCopy)
+                continue;
             e.description = xml->getStringAttribute ("description");
             e.file = file;
             entries.push_back (e);

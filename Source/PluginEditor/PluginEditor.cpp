@@ -118,7 +118,7 @@ void NeddPEEditor::setUiScale (float scale)
 
 void NeddPEEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (colours::background);
+    fillWindowBackground (g, getLocalBounds().toFloat());
 }
 
 void NeddPEEditor::resized()

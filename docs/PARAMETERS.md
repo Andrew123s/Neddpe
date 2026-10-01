@@ -6,7 +6,7 @@ Generated from `Source/Parameters/ParameterDefs.cpp` by `NeddPETests --dump-para
 - **Auto**: automatable by the host. Matrix routing choices are deliberately not automatable.
 - **Morph**: included in A/B morphing and mutation. **Scope**: `voice` parameters are evaluated per note.
 
-Total: 357 parameters.
+Total: 360 parameters.
 
 ## Oscillators
 
@@ -51,6 +51,7 @@ Shown for OSC 1 (`osc1_`); OSC 2 and 3 use `osc2_` / `osc3_`.
 | `osc1_gdensity` | OSC 1 Grain Density | float | 1.0 /s .. 200 /s | 30 /s | yes | yes | voice |
 | `osc1_gspray` | OSC 1 Grain Position Spray | float | 0% .. 100% | 10% | yes | yes | voice |
 | `osc1_gpitch` | OSC 1 Grain Pitch Spray | float | 0.0 st .. 12.0 st | 0.0 st | yes | yes | voice |
+| `osc1_source` | OSC 1 Built-in Source | choice | Vowel Drift / Glass Bloom / Night Choir / Breath Air / Bell Cloud / Deep Drone | Vowel Drift | yes | yes | voice |
 
 ## Filter
 

@@ -143,7 +143,7 @@ void ParamKnob::paint (juce::Graphics& g)
     };
 
     // Track
-    arc (0.0f, 1.0f, arcRadius, 3.0f, colours::control);
+    arc (0.0f, 1.0f, arcRadius, 4.0f, colours::outline);
 
     // Modulation reach
     const float basePlain = (float) getValue();
@@ -154,21 +154,34 @@ void ParamKnob::paint (juce::Graphics& g)
         arc (std::min (lo, hi), std::max (lo, hi), radius - 0.5f, 2.0f, colours::modulation.withAlpha (0.55f));
     }
 
-    // Value
+    // Value: a rose gradient arc (or the knob's own accent when it has one, e.g. the macros).
     if (std::abs (norm - zeroNorm) > 1.0e-4f)
-        arc (std::min (norm, zeroNorm), std::max (norm, zeroNorm), arcRadius, 3.0f, enabled ? accent : colours::textFaint);
+    {
+        juce::Path p;
+        p.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, angleFor (std::min (norm, zeroNorm)), angleFor (std::max (norm, zeroNorm)), true);
+        const juce::PathStrokeType stroke (4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
+        if (! enabled)
+            g.setColour (colours::textFaint);
+        else if (accent == colours::accent)
+            g.setGradientFill (roseGradient (knob));
+        else
+            g.setGradientFill (juce::ColourGradient (accent.brighter (0.35f), knob.getTopLeft(), accent, knob.getBottomRight(), false));
+        g.strokePath (p, stroke);
+    }
 
-    // Body
-    const float bodyRadius = radius * 0.62f;
+    // Body: porcelain disc with a soft rose shadow and a coloured pointer dot.
+    const float bodyRadius = radius * 0.58f;
     const auto body = juce::Rectangle<float> (bodyRadius * 2.0f, bodyRadius * 2.0f).withCentre (centre);
-    g.setGradientFill (juce::ColourGradient (colours::raised.brighter (0.12f), body.getTopLeft(), colours::panel, body.getBottomRight(), false));
+    drawSoftShadow (g, body, bodyRadius, 0.9f);
+    g.setGradientFill (juce::ColourGradient (colours::panel, body.getTopLeft(), colours::control, body.getBottomRight(), false));
     g.fillEllipse (body);
-    g.setColour (colours::outlineStrong);
-    g.drawEllipse (body, 1.0f);
+    g.setColour (colours::outline);
+    g.drawEllipse (body.reduced (0.5f), 1.0f);
 
     const float angle = angleFor (norm);
-    g.setColour (enabled ? colours::text : colours::textFaint);
-    g.drawLine (juce::Line<float> (pointOnCircle (centre, bodyRadius * 0.3f, angle), pointOnCircle (centre, bodyRadius * 0.92f, angle)), 2.0f);
+    const auto pointer = juce::Rectangle<float> (4.6f, 4.6f).withCentre (pointOnCircle (centre, bodyRadius * 0.62f, angle));
+    g.setColour (enabled ? (accent == colours::accent ? colours::accent : accent) : colours::textFaint);
+    g.fillEllipse (pointer);
 
     // Live modulated position of the focus note
     if (live && dest != ModDest::None)

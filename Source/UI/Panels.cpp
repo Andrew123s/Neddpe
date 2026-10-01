@@ -28,6 +28,7 @@ OscillatorPanel::OscillatorPanel (EditorContext& c, int index, bool isCompact)
       fmSourceChoice (c, pid::osc (index, OscField::FmSource)),
       op1RatioChoice (c, pid::osc (index, OscField::Op1Ratio)),
       op2RatioChoice (c, pid::osc (index, OscField::Op2Ratio)),
+      sourceChoice (c, pid::osc (index, OscField::SampleSource)),
       syncToggle (c, pid::osc (index, OscField::Sync), "Sync"),
       loopToggle (c, pid::osc (index, OscField::SampleLoop), "Loop"),
       display (c, index)
@@ -35,9 +36,10 @@ OscillatorPanel::OscillatorPanel (EditorContext& c, int index, bool isCompact)
     titleColour = colours::text;
     for (auto* comp : std::initializer_list<juce::Component*> { &onToggle, &engineChoice, &waveChoice, &tableChoice, &noiseChoice, &algoChoice,
                                                                 &routeChoice, &fmSourceChoice, &op1RatioChoice, &op2RatioChoice, &syncToggle,
-                                                                &loopToggle, &importButton, &clearButton, &sourceCaption,
+                                                                &loopToggle, &importButton, &clearButton, &sourceCaption, &sourceChoice,
                                                                 &display, &fmCaption, &unisonCaption, &operatorCaption, &grainCaption })
         addChildComponent (comp);
+    sourceChoice.setTooltip ("Built-in source played when no sample is imported into this oscillator");
 
     onToggle.setVisible (true);
     engineChoice.setVisible (true);
@@ -146,8 +148,6 @@ void OscillatorPanel::updateSourceCaption()
     clearButton.setEnabled (slot.sample != nullptr);
     if (slot.sample != nullptr)
         sourceCaption.setText (slot.sample->name + "  " + juce::String ((double) slot.sample->length / slot.sample->sampleRate, 1) + " s");
-    else
-        sourceCaption.setText (assets::getBuiltInSample().name);
 }
 
 void OscillatorPanel::editorTick()
@@ -168,7 +168,7 @@ void OscillatorPanel::editorTick()
     else if (assetsVersion != shownAssetsVersion)
     {
         shownAssetsVersion = assetsVersion;
-        updateSourceCaption();
+        resized();   // a sample may have been imported or removed: caption vs built-in source list
     }
 }
 
@@ -178,8 +178,8 @@ void OscillatorPanel::resized()
         k->setVisible (false);
     for (auto* comp : std::initializer_list<juce::Component*> { &waveChoice, &tableChoice, &noiseChoice, &algoChoice, &routeChoice, &fmSourceChoice,
                                                                 &op1RatioChoice, &op2RatioChoice, &syncToggle, &loopToggle, &importButton,
-                                                                &clearButton, &sourceCaption, &fmCaption, &unisonCaption, &operatorCaption,
-                                                                &grainCaption })
+                                                                &clearButton, &sourceCaption, &sourceChoice, &fmCaption, &unisonCaption,
+                                                                &operatorCaption, &grainCaption })
         comp->setVisible (false);
 
     const bool usesSample = shownEngine == OscEngine::Granular || shownEngine == OscEngine::Sample;
@@ -216,6 +216,7 @@ void OscillatorPanel::resized()
             break;
         case OscEngine::Granular:
         case OscEngine::Sample:
+        {
             if (! compact)
             {
                 place (clearButton, selector.removeFromRight (48));
@@ -223,8 +224,10 @@ void OscillatorPanel::resized()
                 place (importButton, selector.removeFromRight (58));
                 selector.removeFromRight (6);
             }
-            place (sourceCaption, selector);
+            const bool imported = ctx.processor.getOscillatorAssets().slots[(size_t) oscIndex].sample != nullptr;
+            place (imported ? static_cast<juce::Component&> (sourceCaption) : static_cast<juce::Component&> (sourceChoice), selector);
             break;
+        }
     }
 
     if (! compact && shownEngine == OscEngine::Wavetable && shownTableImported)

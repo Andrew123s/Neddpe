@@ -257,7 +257,8 @@ void WaveDisplay::editorTick()
     int prime = 1;
     for (auto f : { OscField::On, OscField::Engine, OscField::Wave, OscField::PulseWidth, OscField::Table, OscField::WtPos,
                     OscField::NoiseType, OscField::FmAlgorithm, OscField::Op1Ratio, OscField::Op2Ratio, OscField::OpFine,
-                    OscField::Op1Amount, OscField::Op2Amount, OscField::FmFeedback, OscField::GrainSpray, OscField::SampleLoop })
+                    OscField::Op1Amount, OscField::Op2Amount, OscField::FmFeedback, OscField::GrainSpray, OscField::SampleLoop,
+                    OscField::SampleSource })
     {
         sig += ctx.param (pid::osc (oscIndex, f)) * (float) (prime += 7);
     }
@@ -297,7 +298,7 @@ const Wavetable& WaveDisplay::currentTable() const
 const SampleData& WaveDisplay::currentSample() const
 {
     const auto& slot = ctx.processor.getOscillatorAssets().slots[(size_t) oscIndex];
-    return slot.sample != nullptr ? *slot.sample : assets::getBuiltInSample();
+    return slot.sample != nullptr ? *slot.sample : assets::getBuiltInSample (ctx.params().getInt (pid::osc (oscIndex, OscField::SampleSource)));
 }
 
 void WaveDisplay::rebuild()

@@ -78,7 +78,7 @@ void ExpressionField::paint (juce::Graphics& g)
         const bool black = pc == 1 || pc == 3 || pc == 6 || pc == 8 || pc == 10;
         const float x0 = xFor ((float) n - 0.5f), x1 = xFor ((float) n + 0.5f);
         if (x1 < area.getX() || x0 > area.getRight()) continue;
-        g.setColour (black ? colours::panel.darker (0.3f) : colours::panel.brighter (0.03f));
+        g.setColour (black ? colours::accentSoft.withAlpha (0.7f) : colours::panel);
         g.fillRect (juce::Rectangle<float> (x0, area.getY(), x1 - x0, area.getHeight()).getIntersection (area));
         if (pc == 0)
         {

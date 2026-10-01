@@ -28,7 +28,8 @@ namespace ids
 
 juce::StringArray getPresetCategories()
 {
-    return { "Leads", "Bass", "Pads", "Plucks", "Keys", "FM", "Wavetable", "Atmospheric", "Experimental", "MPE Performance", "User" };
+    return { "Dreamy", "Dark", "Ethereal", "Leads", "Bass", "Pads", "Plucks", "Keys", "FM", "Wavetable", "Atmospheric", "Experimental",
+             "MPE Performance", "User" };
 }
 
 juce::ValueTree PresetState::toValueTree() const

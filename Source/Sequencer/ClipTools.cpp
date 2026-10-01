@@ -77,6 +77,18 @@ void PerformanceRecorder::close (ClipNote note, double endBeat, float releaseVel
     clip.addNote (std::move (note));
 }
 
+NoteClip PerformanceRecorder::preview (double nowBeat) const
+{
+    NoteClip result = clip;
+    for (const auto& [id, note] : open)
+    {
+        auto n = note;
+        n.length = std::max (1.0 / 64.0, timeSince (n.start, nowBeat));
+        result.addNote (std::move (n));
+    }
+    return result;
+}
+
 NoteClip PerformanceRecorder::finish (double endBeat)
 {
     for (auto& [id, note] : open)

@@ -57,7 +57,8 @@ private:
     int shownAssetsVersion = -1;
 
     ParamToggle onToggle;
-    ParamChoice engineChoice, waveChoice, tableChoice, noiseChoice, algoChoice, routeChoice, fmSourceChoice, op1RatioChoice, op2RatioChoice;
+    ParamChoice engineChoice, waveChoice, tableChoice, noiseChoice, algoChoice, routeChoice, fmSourceChoice, op1RatioChoice, op2RatioChoice,
+                sourceChoice;
     ParamToggle syncToggle, loopToggle;
     juce::TextButton importButton { "Import" }, clearButton { "Clear" };
     Caption sourceCaption;

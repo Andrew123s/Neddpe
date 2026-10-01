@@ -221,45 +221,270 @@ namespace
         }
     }
 
-    // ---- built-in source -----------------------------------------------------------------------
-    SampleData makeBuiltIn()
-    {
-        constexpr double rate = 48000.0;
-        constexpr int length = (int) (rate * 4.0);
-        constexpr float pitchHz = 261.6256f;   // middle C
+    // ---- built-in sources ----------------------------------------------------------------------
+    // All are generated at start-up from the factory wavetables and simple DSP (no recorded
+    // material), stereo, 48 kHz, pitched at middle C (note 60) so the root key default is right.
+    constexpr double kBuiltInRate = 48000.0;
+    constexpr float kMiddleC = 261.6256f;
 
+    struct Svf
+    {
+        float ic1 = 0.0f, ic2 = 0.0f;
+        float bandPass (float x, float cutoff, float q) noexcept
+        {
+            const float g = std::tan (dsp::kPi * std::clamp (cutoff, 20.0f, 20000.0f) / (float) kBuiltInRate);
+            const float k = 1.0f / q;
+            const float a1 = 1.0f / (1.0f + g * (g + k));
+            const float v1 = a1 * (ic1 + g * (x - ic2));
+            const float v2 = ic2 + g * v1;
+            ic1 = 2.0f * v1 - ic1;
+            ic2 = 2.0f * v2 - ic2;
+            return v1;
+        }
+        float lowPass (float x, float cutoff) noexcept
+        {
+            const float g = std::tan (dsp::kPi * std::clamp (cutoff, 20.0f, 20000.0f) / (float) kBuiltInRate);
+            const float k = 1.4142f;
+            const float a1 = 1.0f / (1.0f + g * (g + k));
+            const float v1 = a1 * (ic1 + g * (x - ic2));
+            const float v2 = ic2 + g * v1;
+            ic1 = 2.0f * v1 - ic1;
+            ic2 = 2.0f * v2 - ic2;
+            return v2;
+        }
+    };
+
+    SampleData newBuiltIn (const juce::String& name, double seconds)
+    {
+        SampleData s;
+        s.name = "Built-in: " + name;
+        s.sampleRate = kBuiltInRate;
+        s.length = (int) (kBuiltInRate * seconds);
+        s.stereo = true;
+        s.left.assign ((size_t) s.length + 2 * SampleData::kGuard, 0.0f);
+        s.right.assign ((size_t) s.length + 2 * SampleData::kGuard, 0.0f);
+        return s;
+    }
+
+    /** Peak-normalises to `peak` and fades the ends so loops and grains never click. */
+    void finishBuiltIn (SampleData& s, float peak)
+    {
+        float maxAbs = 1.0e-9f;
+        for (int i = 0; i < s.length; ++i)
+            maxAbs = std::max ({ maxAbs, std::abs (s.left[(size_t) (i + SampleData::kGuard)]), std::abs (s.right[(size_t) (i + SampleData::kGuard)]) });
+        const float gain = peak / maxAbs;
+        const int fade = (int) (kBuiltInRate * 0.02);
+        for (int i = 0; i < s.length; ++i)
+        {
+            const float f = std::min (1.0f, (float) std::min (i, s.length - 1 - i) / (float) fade);
+            s.left[(size_t) (i + SampleData::kGuard)] *= gain * f;
+            s.right[(size_t) (i + SampleData::kGuard)] *= gain * f;
+        }
+    }
+
+    void put (SampleData& s, int i, float l, float r)
+    {
+        s.left[(size_t) (i + SampleData::kGuard)] = l;
+        s.right[(size_t) (i + SampleData::kGuard)] = r;
+    }
+
+    SampleData makeVowelDrift()
+    {
         const auto& vowels = WavetableBank::getInstance().get (3);
         const auto& glass = WavetableBank::getInstance().get (7);
-        const int mip = Wavetable::selectMip (pitchHz / (float) rate, (float) rate);
-
-        SampleData s;
-        s.name = "Built-in: Vowel Drift";
-        s.sampleRate = rate;
-        s.length = length;
-        s.stereo = true;
-        s.left.assign ((size_t) length + 2 * SampleData::kGuard, 0.0f);
-        s.right.assign ((size_t) length + 2 * SampleData::kGuard, 0.0f);
+        const int mip = Wavetable::selectMip (kMiddleC / (float) kBuiltInRate, (float) kBuiltInRate);
+        auto s = newBuiltIn ("Vowel Drift", 4.0);
 
         float phaseL = 0.0f, phaseR = 0.37f;
-        for (int i = 0; i < length; ++i)
+        for (int i = 0; i < s.length; ++i)
         {
-            const float t = (float) i / (float) length;
-            const float seconds = (float) i / (float) rate;
-            const float scan = 0.5f - 0.5f * std::cos (dsp::kTwoPi * t);                     // 0 -> 1 -> 0
+            const float t = (float) i / (float) s.length;
+            const float seconds = (float) i / (float) kBuiltInRate;
+            const float scan = 0.5f - 0.5f * std::cos (dsp::kTwoPi * t);
             const float vibrato = std::exp2 (0.12f / 12.0f * std::sin (dsp::kTwoPi * 5.1f * seconds));
             const float swell = 0.75f + 0.25f * std::sin (dsp::kTwoPi * 0.5f * seconds);
-            const float fade = std::min (1.0f, std::min (t, 1.0f - t) * 40.0f);             // no clicks at the ends
-
             const float glassMix = 0.25f * t;
             const float l = dsp::lerp (vowels.sample (phaseL, scan, mip), glass.sample (phaseL, t, mip), glassMix);
             const float r = dsp::lerp (vowels.sample (phaseR, 1.0f - scan * 0.8f, mip), glass.sample (phaseR, t, mip), glassMix);
-            s.left[(size_t) (i + SampleData::kGuard)] = 0.6f * l * swell * fade;
-            s.right[(size_t) (i + SampleData::kGuard)] = 0.6f * r * swell * fade;
-
-            phaseL = dsp::wrapPhase (phaseL + pitchHz * vibrato / (float) rate);
-            phaseR = dsp::wrapPhase (phaseR + pitchHz * vibrato * 1.0015f / (float) rate);
+            put (s, i, l * swell, r * swell);
+            phaseL = dsp::wrapPhase (phaseL + kMiddleC * vibrato / (float) kBuiltInRate);
+            phaseR = dsp::wrapPhase (phaseR + kMiddleC * vibrato * 1.0015f / (float) kBuiltInRate);
         }
+        finishBuiltIn (s, 0.6f);
         return s;
+    }
+
+    SampleData makeGlassBloom()
+    {
+        const auto& glass = WavetableBank::getInstance().get (7);
+        const int mip = Wavetable::selectMip (2.0f * kMiddleC / (float) kBuiltInRate, (float) kBuiltInRate);
+        auto s = newBuiltIn ("Glass Bloom", 5.0);
+
+        float p1 = 0.0f, p2 = 0.25f, p3 = 0.5f;
+        for (int i = 0; i < s.length; ++i)
+        {
+            const float t = (float) i / (float) s.length;
+            const float bloom = 1.0f - std::exp (-t * 6.0f);
+            const float scan = 0.1f + 0.8f * t;
+            const float a = glass.sample (p1, scan, mip);
+            const float b = glass.sample (p2, std::min (1.0f, scan + 0.15f), mip);
+            const float octave = std::sin (dsp::kTwoPi * p3) * 0.35f * t;
+            put (s, i, (a * 0.8f + octave) * bloom, (b * 0.8f + octave) * bloom);
+            p1 = dsp::wrapPhase (p1 + kMiddleC / (float) kBuiltInRate);
+            p2 = dsp::wrapPhase (p2 + kMiddleC * 1.0021f / (float) kBuiltInRate);
+            p3 = dsp::wrapPhase (p3 + 2.0f * kMiddleC * 0.9993f / (float) kBuiltInRate);
+        }
+        finishBuiltIn (s, 0.6f);
+        return s;
+    }
+
+    SampleData makeNightChoir()
+    {
+        const auto& vowels = WavetableBank::getInstance().get (3);
+        const int mip = Wavetable::selectMip (kMiddleC / (float) kBuiltInRate, (float) kBuiltInRate);
+        auto s = newBuiltIn ("Night Choir", 5.0);
+
+        const float detune[3] = { -9.0f, 0.0f, 7.0f };
+        const float panL[3] = { 0.9f, 0.6f, 0.25f }, panR[3] = { 0.25f, 0.6f, 0.9f };
+        const float vibRate[3] = { 4.6f, 5.1f, 4.9f };
+        float phase[3] = { 0.0f, 0.31f, 0.67f };
+        dsp::Random32 rng;
+        rng.seed (777u);
+        Svf breathL, breathR;
+
+        for (int i = 0; i < s.length; ++i)
+        {
+            const float seconds = (float) i / (float) kBuiltInRate;
+            const float t = (float) i / (float) s.length;
+            float l = 0.0f, r = 0.0f;
+            for (int v = 0; v < 3; ++v)
+            {
+                // Slowly between "oo" and "ah", each voice on its own breath.
+                const float scan = 0.55f + 0.2f * std::sin (dsp::kTwoPi * (0.11f + 0.03f * (float) v) * seconds + (float) v);
+                const float x = vowels.sample (phase[v], scan, mip);
+                l += x * panL[v];
+                r += x * panR[v];
+                const float vib = std::exp2 ((detune[v] + 9.0f * std::sin (dsp::kTwoPi * vibRate[v] * seconds)) / 1200.0f);
+                phase[v] = dsp::wrapPhase (phase[v] + kMiddleC * vib / (float) kBuiltInRate);
+            }
+            const float swell = 0.7f + 0.3f * std::sin (dsp::kTwoPi * 0.2f * seconds - 1.5f);
+            l += breathL.bandPass (rng.nextBipolar(), 2600.0f, 1.2f) * 0.35f;
+            r += breathR.bandPass (rng.nextBipolar(), 2900.0f, 1.2f) * 0.35f;
+            put (s, i, l * swell * (0.85f + 0.15f * t), r * swell * (0.85f + 0.15f * t));
+        }
+        finishBuiltIn (s, 0.6f);
+        return s;
+    }
+
+    SampleData makeBreathAir()
+    {
+        auto s = newBuiltIn ("Breath Air", 4.0);
+        dsp::Random32 rng;
+        rng.seed (4242u);
+        Svf f1L, f2L, f1R, f2R;
+        float phase = 0.0f;
+
+        for (int i = 0; i < s.length; ++i)
+        {
+            const float t = (float) i / (float) s.length;
+            // Formants glide from "ah" towards "oo" and back.
+            const float morph = 0.5f - 0.5f * std::cos (dsp::kTwoPi * t);
+            const float f1 = dsp::lerp (750.0f, 320.0f, morph);
+            const float f2 = dsp::lerp (1250.0f, 780.0f, morph);
+            const float nl = rng.nextBipolar(), nr = rng.nextBipolar();
+            const float tone = std::sin (dsp::kTwoPi * phase) * 0.06f;
+            const float l = f1L.bandPass (nl, f1, 5.0f) * 0.9f + f2L.bandPass (nl, f2, 6.0f) * 0.6f + tone;
+            const float r = f1R.bandPass (nr, f1 * 1.03f, 5.0f) * 0.9f + f2R.bandPass (nr, f2 * 0.97f, 6.0f) * 0.6f + tone;
+            put (s, i, l, r);
+            phase = dsp::wrapPhase (phase + kMiddleC / (float) kBuiltInRate);
+        }
+        finishBuiltIn (s, 0.55f);
+        return s;
+    }
+
+    SampleData makeBellCloud()
+    {
+        auto s = newBuiltIn ("Bell Cloud", 6.0);
+        const float ratios[] = { 1.0f, 2.0f, 2.76f, 4.07f, 5.40f, 8.93f };
+        const float amps[] = { 1.0f, 0.45f, 0.6f, 0.3f, 0.22f, 0.1f };
+        dsp::Random32 rng;
+        rng.seed (90210u);
+
+        double strikeAt = 0.0;
+        while (strikeAt < 5.4)
+        {
+            const int start = (int) (strikeAt * kBuiltInRate);
+            const float octave = rng.nextFloat() < 0.3f ? 2.0f : 1.0f;
+            const float level = 0.5f + 0.5f * rng.nextFloat();
+            const float pan = rng.nextBipolar() * 0.8f;
+            const float gl = std::sqrt (0.5f * (1.0f - pan)), gr = std::sqrt (0.5f * (1.0f + pan));
+            for (int k = 0; k < 6; ++k)
+            {
+                const float freq = kMiddleC * octave * ratios[k];
+                if (freq > 18000.0f) continue;
+                const float tau = 2.4f / (1.0f + ratios[k] * 0.45f);
+                const float inc = freq / (float) kBuiltInRate;
+                float phase = rng.nextFloat();
+                for (int i = start; i < s.length; ++i)
+                {
+                    const float age = (float) (i - start) / (float) kBuiltInRate;
+                    const float env = std::exp (-age / tau) * std::min (1.0f, age * 400.0f);
+                    if (env < 1.0e-4f) break;
+                    const float v = std::sin (dsp::kTwoPi * phase) * amps[k] * env * level;
+                    s.left[(size_t) (i + SampleData::kGuard)] += v * gl;
+                    s.right[(size_t) (i + SampleData::kGuard)] += v * gr;
+                    phase = dsp::wrapPhase (phase + inc);
+                }
+            }
+            strikeAt += 0.38 + 0.5 * rng.nextFloat();
+        }
+        finishBuiltIn (s, 0.6f);
+        return s;
+    }
+
+    SampleData makeDeepDrone()
+    {
+        const auto& sweep = WavetableBank::getInstance().get (2);
+        const int mip = Wavetable::selectMip (kMiddleC / (float) kBuiltInRate, (float) kBuiltInRate);
+        auto s = newBuiltIn ("Deep Drone", 5.0);
+        float p[3] = { 0.0f, 0.4f, 0.8f }, sub = 0.0f;
+        const float cents[3] = { -7.0f, 0.0f, 6.0f };
+        Svf lpL, lpR;
+
+        for (int i = 0; i < s.length; ++i)
+        {
+            const float seconds = (float) i / (float) kBuiltInRate;
+            float l = 0.0f, r = 0.0f;
+            for (int v = 0; v < 3; ++v)
+            {
+                const float x = sweep.sample (p[v], 0.75f, mip);
+                l += x * (v == 2 ? 0.4f : 0.8f);
+                r += x * (v == 0 ? 0.4f : 0.8f);
+                p[v] = dsp::wrapPhase (p[v] + kMiddleC * std::exp2 (cents[v] / 1200.0f) / (float) kBuiltInRate);
+            }
+            const float subWave = std::sin (dsp::kTwoPi * sub) * 0.9f;
+            sub = dsp::wrapPhase (sub + 0.5f * kMiddleC / (float) kBuiltInRate);
+            const float cutoff = 500.0f * std::exp2 (2.2f * (0.5f - 0.5f * std::cos (dsp::kTwoPi * seconds / 5.0f)));
+            put (s, i, lpL.lowPass (l, cutoff) + subWave, lpR.lowPass (r, cutoff * 1.08f) + subWave);
+        }
+        finishBuiltIn (s, 0.65f);
+        return s;
+    }
+
+    const std::vector<SampleData>& builtIns()
+    {
+        static const std::vector<SampleData> sources = []
+        {
+            std::vector<SampleData> v;
+            v.push_back (makeVowelDrift());
+            v.push_back (makeGlassBloom());
+            v.push_back (makeNightChoir());
+            v.push_back (makeBreathAir());
+            v.push_back (makeBellCloud());
+            v.push_back (makeDeepDrone());
+            return v;
+        }();
+        return sources;
     }
 } // namespace
 
@@ -441,10 +666,15 @@ namespace assets
         return UserWavetable::create (file.getFileNameWithoutExtension(), std::move (frames));
     }
 
-    const SampleData& getBuiltInSample()
+    juce::StringArray getBuiltInSampleNames()
     {
-        static const SampleData builtIn = makeBuiltIn();
-        return builtIn;
+        return { "Vowel Drift", "Glass Bloom", "Night Choir", "Breath Air", "Bell Cloud", "Deep Drone" };
+    }
+
+    const SampleData& getBuiltInSample (int index)
+    {
+        const auto& sources = builtIns();
+        return sources[(size_t) juce::jlimit (0, (int) sources.size() - 1, index)];
     }
 } // namespace assets
 

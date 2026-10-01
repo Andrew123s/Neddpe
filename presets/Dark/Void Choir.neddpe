@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<NeddPE version="1" preset="Void Choir" category="Dark" author="NeddPE Factory"
+        description="A choir an octave down, half dissolved into breath. Pressure parts the fog, slide drifts the voices.">
+  <PARAMS>
+    <PARAM id="osc1_on" value="1.0"/>
+    <PARAM id="osc1_engine" value="4.0"/>
+    <PARAM id="osc1_wave" value="2.0"/>
+    <PARAM id="osc1_pw" value="0.5"/>
+    <PARAM id="osc1_table" value="0.0"/>
+    <PARAM id="osc1_wtpos" value="0.300000011920929"/>
+    <PARAM id="osc1_octave" value="-1.0"/>
+    <PARAM id="osc1_semi" value="0.0"/>
+    <PARAM id="osc1_fine" value="0.0"/>
+    <PARAM id="osc1_phase" value="0.0"/>
+    <PARAM id="osc1_phrand" value="0.0"/>
+    <PARAM id="osc1_level" value="0.800000011920929"/>
+    <PARAM id="osc1_pan" value="0.0"/>
+    <PARAM id="osc1_unison" value="1.0"/>
+    <PARAM id="osc1_detune" value="0.2000000029802322"/>
+    <PARAM id="osc1_spread" value="0.8999999761581421"/>
+    <PARAM id="osc1_fmsrc" value="2.0"/>
+    <PARAM id="osc1_fm" value="0.0"/>
+    <PARAM id="osc1_sync" value="0.0"/>
+    <PARAM id="osc1_ring" value="0.0"/>
+    <PARAM id="osc1_route" value="0.0"/>
+    <PARAM id="osc1_noise" value="0.0"/>
+    <PARAM id="osc1_fmalgo" value="0.0"/>
+    <PARAM id="osc1_op1ratio" value="3.0"/>
+    <PARAM id="osc1_op2ratio" value="2.0"/>
+    <PARAM id="osc1_opfine" value="0.0"/>
+    <PARAM id="osc1_op1amt" value="0.3499999940395355"/>
+    <PARAM id="osc1_op2amt" value="0.0"/>
+    <PARAM id="osc1_fmfb" value="0.0"/>
+    <PARAM id="osc1_fmenv" value="0.0"/>
+    <PARAM id="osc1_fmkt" value="0.0"/>
+    <PARAM id="osc1_root" value="60.0"/>
+    <PARAM id="osc1_loop" value="1.0"/>
+    <PARAM id="osc1_gsize" value="0.3499999940395355"/>
+    <PARAM id="osc1_gdensity" value="18.0"/>
+    <PARAM id="osc1_gspray" value="0.300000011920929"/>
+    <PARAM id="osc1_gpitch" value="0.0"/>
+    <PARAM id="osc1_source" value="2.0"/>
+    <PARAM id="osc2_on" value="1.0"/>
+    <PARAM id="osc2_engine" value="4.0"/>
+    <PARAM id="osc2_wave" value="2.0"/>
+    <PARAM id="osc2_pw" value="0.5"/>
+    <PARAM id="osc2_table" value="0.0"/>
+    <PARAM id="osc2_wtpos" value="0.5"/>
+    <PARAM id="osc2_octave" value="0.0"/>
+    <PARAM id="osc2_semi" value="0.0"/>
+    <PARAM id="osc2_fine" value="0.0"/>
+    <PARAM id="osc2_phase" value="0.0"/>
+    <PARAM id="osc2_phrand" value="0.0"/>
+    <PARAM id="osc2_level" value="0.3499999940395355"/>
+    <PARAM id="osc2_pan" value="0.0"/>
+    <PARAM id="osc2_unison" value="1.0"/>
+    <PARAM id="osc2_detune" value="0.2000000029802322"/>
+    <PARAM id="osc2_spread" value="0.6000000238418579"/>
+    <PARAM id="osc2_fmsrc" value="0.0"/>
+    <PARAM id="osc2_fm" value="0.0"/>
+    <PARAM id="osc2_sync" value="0.0"/>
+    <PARAM id="osc2_ring" value="0.0"/>
+    <PARAM id="osc2_route" value="0.0"/>
+    <PARAM id="osc2_noise" value="0.0"/>
+    <PARAM id="osc2_fmalgo" value="0.0"/>
+    <PARAM id="osc2_op1ratio" value="3.0"/>
+    <PARAM id="osc2_op2ratio" value="2.0"/>
+    <PARAM id="osc2_opfine" value="0.0"/>
+    <PARAM id="osc2_op1amt" value="0.3499999940395355"/>
+    <PARAM id="osc2_op2amt" value="0.0"/>
+    <PARAM id="osc2_fmfb" value="0.0"/>
+    <PARAM id="osc2_fmenv" value="0.0"/>
+    <PARAM id="osc2_fmkt" value="0.0"/>
+    <PARAM id="osc2_root" value="60.0"/>
+    <PARAM id="osc2_loop" value="1.0"/>
+    <PARAM id="osc2_gsize" value="0.119999997317791"/>
+    <PARAM id="osc2_gdensity" value="40.0"/>
+    <PARAM id="osc2_gspray" value="0.6000000238418579"/>
+    <PARAM id="osc2_gpitch" value="0.2000000029802322"/>
+    <PARAM id="osc2_source" value="3.0"/>
+    <PARAM id="osc3_on" value="0.0"/>
+    <PARAM id="osc3_engine" value="0.0"/>
+    <PARAM id="osc3_wave" value="2.0"/>
+    <PARAM id="osc3_pw" value="0.5"/>
+    <PARAM id="osc3_table" value="0.0"/>
+    <PARAM id="osc3_wtpos" value="0.0"/>
+    <PARAM id="osc3_octave" value="0.0"/>
+    <PARAM id="osc3_semi" value="0.0"/>
+    <PARAM id="osc3_fine" value="0.0"/>
+    <PARAM id="osc3_phase" value="0.0"/>
+    <PARAM id="osc3_phrand" value="0.0"/>
+    <PARAM id="osc3_level" value="0.75"/>
+    <PARAM id="osc3_pan" value="0.0"/>
+    <PARAM id="osc3_unison" value="1.0"/>
+    <PARAM id="osc3_detune" value="0.2000000029802322"/>
+    <PARAM id="osc3_spread" value="0.6000000238418579"/>
+    <PARAM id="osc3_fmsrc" value="1.0"/>
+    <PARAM id="osc3_fm" value="0.0"/>
+    <PARAM id="osc3_sync" value="0.0"/>
+    <PARAM id="osc3_ring" value="0.0"/>
+    <PARAM id="osc3_route" value="0.0"/>
+    <PARAM id="osc3_noise" value="0.0"/>
+    <PARAM id="osc3_fmalgo" value="0.0"/>
+    <PARAM id="osc3_op1ratio" value="3.0"/>
+    <PARAM id="osc3_op2ratio" value="2.0"/>
+    <PARAM id="osc3_opfine" value="0.0"/>
+    <PARAM id="osc3_op1amt" value="0.3499999940395355"/>
+    <PARAM id="osc3_op2amt" value="0.0"/>
+    <PARAM id="osc3_fmfb" value="0.0"/>
+    <PARAM id="osc3_fmenv" value="0.0"/>
+    <PARAM id="osc3_fmkt" value="0.0"/>
+    <PARAM id="osc3_root" value="60.0"/>
+    <PARAM id="osc3_loop" value="1.0"/>
+    <PARAM id="osc3_gsize" value="0.07999999821186066"/>
+    <PARAM id="osc3_gdensity" value="30.0"/>
+    <PARAM id="osc3_gspray" value="0.1000000014901161"/>
+    <PARAM id="osc3_gpitch" value="0.0"/>
+    <PARAM id="osc3_source" value="0.0"/>
+    <PARAM id="flt_on" value="1.0"/>
+    <PARAM id="flt_type" value="0.0"/>
+    <PARAM id="flt_cutoff" value="1800.0"/>
+    <PARAM id="flt_reso" value="0.2000000029802322"/>
+    <PARAM id="flt_drive" value="0.0"/>
+    <PARAM id="flt_keytrack" value="0.300000011920929"/>
+    <PARAM id="flt_env" value="0.0"/>
+    <PARAM id="flt_vel" value="0.300000011920929"/>
+    <PARAM id="flt_mix" value="1.0"/>
+    <PARAM id="amp_level" value="0.8999999761581421"/>
+    <PARAM id="amp_vel" value="0.2000000029802322"/>
+    <PARAM id="amp_pressure" value="0.0"/>
+    <PARAM id="amp_pan" value="0.0"/>
+    <PARAM id="aenv_delay" value="0.0"/>
+    <PARAM id="aenv_attack" value="1.5"/>
+    <PARAM id="aenv_hold" value="0.0"/>
+    <PARAM id="aenv_decay" value="2.0"/>
+    <PARAM id="aenv_sustain" value="1.0"/>
+    <PARAM id="aenv_release" value="5.0"/>
+    <PARAM id="aenv_acurve" value="0.300000011920929"/>
+    <PARAM id="aenv_dcurve" value="0.5"/>
+    <PARAM id="aenv_rcurve" value="0.5"/>
+    <PARAM id="fenv_delay" value="0.0"/>
+    <PARAM id="fenv_attack" value="0.002000000094994903"/>
+    <PARAM id="fenv_hold" value="0.0"/>
+    <PARAM id="fenv_decay" value="0.449999988079071"/>
+    <PARAM id="fenv_sustain" value="0.25"/>
+    <PARAM id="fenv_release" value="0.3499999940395355"/>
+    <PARAM id="fenv_acurve" value="0.2000000029802322"/>
+    <PARAM id="fenv_dcurve" value="0.5"/>
+    <PARAM id="fenv_rcurve" value="0.5"/>
+    <PARAM id="menv_delay" value="0.0"/>
+    <PARAM id="menv_attack" value="0.002000000094994903"/>
+    <PARAM id="menv_hold" value="0.0"/>
+    <PARAM id="menv_decay" value="0.6000000238418579"/>
+    <PARAM id="menv_sustain" value="0.0"/>
+    <PARAM id="menv_release" value="0.4000000059604645"/>
+    <PARAM id="menv_acurve" value="0.2000000029802322"/>
+    <PARAM id="menv_dcurve" value="0.5"/>
+    <PARAM id="menv_rcurve" value="0.5"/>
+    <PARAM id="lfo1_shape" value="0.0"/>
+    <PARAM id="lfo1_rate" value="2.0"/>
+    <PARAM id="lfo1_sync" value="0.0"/>
+    <PARAM id="lfo1_div" value="7.0"/>
+    <PARAM id="lfo1_phase" value="0.0"/>
+    <PARAM id="lfo1_fade" value="0.0"/>
+    <PARAM id="lfo1_retrig" value="1.0"/>
+    <PARAM id="lfo1_amount" value="1.0"/>
+    <PARAM id="lfo2_shape" value="0.0"/>
+    <PARAM id="lfo2_rate" value="3.0"/>
+    <PARAM id="lfo2_sync" value="0.0"/>
+    <PARAM id="lfo2_div" value="7.0"/>
+    <PARAM id="lfo2_phase" value="0.0"/>
+    <PARAM id="lfo2_fade" value="0.0"/>
+    <PARAM id="lfo2_retrig" value="1.0"/>
+    <PARAM id="lfo2_amount" value="1.0"/>
+    <PARAM id="lfo3_shape" value="0.0"/>
+    <PARAM id="lfo3_rate" value="4.0"/>
+    <PARAM id="lfo3_sync" value="0.0"/>
+    <PARAM id="lfo3_div" value="7.0"/>
+    <PARAM id="lfo3_phase" value="0.0"/>
+    <PARAM id="lfo3_fade" value="0.0"/>
+    <PARAM id="lfo3_retrig" value="1.0"/>
+    <PARAM id="lfo3_amount" value="1.0"/>
+    <PARAM id="mod1_src" value="1.0"/>
+    <PARAM id="mod1_dst" value="1.0"/>
+    <PARAM id="mod1_amt" value="1.0"/>
+    <PARAM id="mod1_curve" value="0.0"/>
+    <PARAM id="mod1_pol" value="1.0"/>
+    <PARAM id="mod2_src" value="2.0"/>
+    <PARAM id="mod2_dst" value="19.0"/>
+    <PARAM id="mod2_amt" value="0.3499999940395355"/>
+    <PARAM id="mod2_curve" value="0.0"/>
+    <PARAM id="mod2_pol" value="0.0"/>
+    <PARAM id="mod3_src" value="3.0"/>
+    <PARAM id="mod3_dst" value="5.0"/>
+    <PARAM id="mod3_amt" value="0.5"/>
+    <PARAM id="mod3_curve" value="0.0"/>
+    <PARAM id="mod3_pol" value="0.0"/>
+    <PARAM id="mod4_src" value="3.0"/>
+    <PARAM id="mod4_dst" value="6.0"/>
+    <PARAM id="mod4_amt" value="-0.300000011920929"/>
+    <PARAM id="mod4_curve" value="0.0"/>
+    <PARAM id="mod4_pol" value="0.0"/>
+    <PARAM id="mod5_src" value="20.0"/>
+    <PARAM id="mod5_dst" value="52.0"/>
+    <PARAM id="mod5_amt" value="0.5"/>
+    <PARAM id="mod5_curve" value="0.0"/>
+    <PARAM id="mod5_pol" value="0.0"/>
+    <PARAM id="mod6_src" value="21.0"/>
+    <PARAM id="mod6_dst" value="19.0"/>
+    <PARAM id="mod6_amt" value="0.449999988079071"/>
+    <PARAM id="mod6_curve" value="0.0"/>
+    <PARAM id="mod6_pol" value="0.0"/>
+    <PARAM id="mod7_src" value="22.0"/>
+    <PARAM id="mod7_dst" value="36.0"/>
+    <PARAM id="mod7_amt" value="0.699999988079071"/>
+    <PARAM id="mod7_curve" value="0.0"/>
+    <PARAM id="mod7_pol" value="0.0"/>
+    <PARAM id="mod8_src" value="23.0"/>
+    <PARAM id="mod8_dst" value="21.0"/>
+    <PARAM id="mod8_amt" value="0.800000011920929"/>
+    <PARAM id="mod8_curve" value="0.0"/>
+    <PARAM id="mod8_pol" value="0.0"/>
+    <PARAM id="mod9_src" value="0.0"/>
+    <PARAM id="mod9_dst" value="0.0"/>
+    <PARAM id="mod9_amt" value="0.0"/>
+    <PARAM id="mod9_curve" value="0.0"/>
+    <PARAM id="mod9_pol" value="0.0"/>
+    <PARAM id="mod10_src" value="0.0"/>
+    <PARAM id="mod10_dst" value="0.0"/>
+    <PARAM id="mod10_amt" value="0.0"/>
+    <PARAM id="mod10_curve" value="0.0"/>
+    <PARAM id="mod10_pol" value="0.0"/>
+    <PARAM id="mod11_src" value="0.0"/>
+    <PARAM id="mod11_dst" value="0.0"/>
+    <PARAM id="mod11_amt" value="0.0"/>
+    <PARAM id="mod11_curve" value="0.0"/>
+    <PARAM id="mod11_pol" value="0.0"/>
+    <PARAM id="mod12_src" value="0.0"/>
+    <PARAM id="mod12_dst" value="0.0"/>
+    <PARAM id="mod12_amt" value="0.0"/>
+    <PARAM id="mod12_curve" value="0.0"/>
+    <PARAM id="mod12_pol" value="0.0"/>
+    <PARAM id="mod13_src" value="0.0"/>
+    <PARAM id="mod13_dst" value="0.0"/>
+    <PARAM id="mod13_amt" value="0.0"/>
+    <PARAM id="mod13_curve" value="0.0"/>
+    <PARAM id="mod13_pol" value="0.0"/>
+    <PARAM id="mod14_src" value="0.0"/>
+    <PARAM id="mod14_dst" value="0.0"/>
+    <PARAM id="mod14_amt" value="0.0"/>
+    <PARAM id="mod14_curve" value="0.0"/>
+    <PARAM id="mod14_pol" value="0.0"/>
+    <PARAM id="mod15_src" value="0.0"/>
+    <PARAM id="mod15_dst" value="0.0"/>
+    <PARAM id="mod15_amt" value="0.0"/>
+    <PARAM id="mod15_curve" value="0.0"/>
+    <PARAM id="mod15_pol" value="0.0"/>
+    <PARAM id="mod16_src" value="0.0"/>
+    <PARAM id="mod16_dst" value="0.0"/>
+    <PARAM id="mod16_amt" value="0.0"/>
+    <PARAM id="mod16_curve" value="0.0"/>
+    <PARAM id="mod16_pol" value="0.0"/>
+    <PARAM id="macro1" value="0.0"/>
+    <PARAM id="macro2" value="0.0"/>
+    <PARAM id="macro3" value="0.0"/>
+    <PARAM id="macro4" value="0.0"/>
+    <PARAM id="master_vol" value="-6.0"/>
+    <PARAM id="quality" value="1.0"/>
+    <PARAM id="voice_mode" value="0.0"/>
+    <PARAM id="voice_poly" value="16.0"/>
+    <PARAM id="voice_glide" value="0.07999999821186066"/>
+    <PARAM id="voice_glidemode" value="0.0"/>
+    <PARAM id="mpe_mode" value="1.0"/>
+    <PARAM id="mpe_bendrange" value="48.0"/>
+    <PARAM id="mpe_masterbend" value="2.0"/>
+    <PARAM id="mpe_pitchsens" value="1.0"/>
+    <PARAM id="mpe_velcurve" value="0.0"/>
+    <PARAM id="mpe_prescurve" value="0.0"/>
+    <PARAM id="mpe_slidecurve" value="0.0"/>
+    <PARAM id="mpe_smooth" value="8.0"/>
+    <PARAM id="scale_type" value="0.0"/>
+    <PARAM id="scale_root" value="0.0"/>
+    <PARAM id="scale_bendq" value="0.0"/>
+    <PARAM id="tune_custom" value="0.0"/>
+    <PARAM id="sh_div" value="13.0"/>
+    <PARAM id="morph_on" value="0.0"/>
+    <PARAM id="morph_pos" value="0.0"/>
+    <PARAM id="midi_out" value="0.0"/>
+    <PARAM id="osc_oversampling" value="1.0"/>
+    <PARAM id="dist_on" value="0.0"/>
+    <PARAM id="dist_type" value="0.0"/>
+    <PARAM id="dist_drive" value="0.300000011920929"/>
+    <PARAM id="dist_tone" value="0.699999988079071"/>
+    <PARAM id="dist_mix" value="1.0"/>
+    <PARAM id="sat_on" value="0.0"/>
+    <PARAM id="sat_drive" value="0.300000011920929"/>
+    <PARAM id="sat_warmth" value="0.5"/>
+    <PARAM id="sat_mix" value="1.0"/>
+    <PARAM id="crush_on" value="0.0"/>
+    <PARAM id="crush_bits" value="10.0"/>
+    <PARAM id="crush_rate" value="1.0"/>
+    <PARAM id="crush_mix" value="1.0"/>
+    <PARAM id="chorus_on" value="0.0"/>
+    <PARAM id="chorus_rate" value="0.6000000238418579"/>
+    <PARAM id="chorus_depth" value="0.5"/>
+    <PARAM id="chorus_mix" value="0.4000000059604645"/>
+    <PARAM id="phaser_on" value="0.0"/>
+    <PARAM id="phaser_rate" value="0.300000011920929"/>
+    <PARAM id="phaser_depth" value="0.699999988079071"/>
+    <PARAM id="phaser_fb" value="0.5"/>
+    <PARAM id="phaser_mix" value="0.5"/>
+    <PARAM id="flanger_on" value="0.0"/>
+    <PARAM id="flanger_rate" value="0.2000000029802322"/>
+    <PARAM id="flanger_depth" value="0.699999988079071"/>
+    <PARAM id="flanger_fb" value="0.6000000238418579"/>
+    <PARAM id="flanger_mix" value="0.5"/>
+    <PARAM id="delay_on" value="0.0"/>
+    <PARAM id="delay_sync" value="1.0"/>
+    <PARAM id="delay_time" value="375.0"/>
+    <PARAM id="delay_div" value="9.0"/>
+    <PARAM id="delay_fb" value="0.4000000059604645"/>
+    <PARAM id="delay_damp" value="0.3499999940395355"/>
+    <PARAM id="delay_pingpong" value="1.0"/>
+    <PARAM id="delay_send" value="0.2000000029802322"/>
+    <PARAM id="delay_return" value="0.6000000238418579"/>
+    <PARAM id="reverb_on" value="1.0"/>
+    <PARAM id="reverb_size" value="0.949999988079071"/>
+    <PARAM id="reverb_damp" value="0.699999988079071"/>
+    <PARAM id="reverb_predelay" value="12.0"/>
+    <PARAM id="reverb_width" value="1.0"/>
+    <PARAM id="reverb_send" value="0.6000000238418579"/>
+    <PARAM id="reverb_return" value="0.699999988079071"/>
+    <PARAM id="eq_on" value="0.0"/>
+    <PARAM id="eq_low" value="0.0"/>
+    <PARAM id="eq_midfreq" value="1200.0"/>
+    <PARAM id="eq_mid" value="0.0"/>
+    <PARAM id="eq_high" value="0.0"/>
+    <PARAM id="comp_on" value="0.0"/>
+    <PARAM id="comp_thresh" value="-18.0"/>
+    <PARAM id="comp_ratio" value="3.0"/>
+    <PARAM id="comp_attack" value="10.0"/>
+    <PARAM id="comp_release" value="120.0"/>
+    <PARAM id="comp_makeup" value="0.0"/>
+    <PARAM id="limiter_on" value="1.0"/>
+    <PARAM id="arp_on" value="0.0"/>
+    <PARAM id="arp_mode" value="0.0"/>
+    <PARAM id="arp_rate" value="13.0"/>
+    <PARAM id="arp_gate" value="0.6000000238418579"/>
+    <PARAM id="arp_swing" value="0.0"/>
+    <PARAM id="arp_oct" value="1.0"/>
+    <PARAM id="arp_length" value="8.0"/>
+    <PARAM id="arp_velmode" value="0.0"/>
+    <PARAM id="arp_vel" value="0.800000011920929"/>
+    <PARAM id="arp_prob" value="1.0"/>
+    <PARAM id="arp_ratchet" value="1.0"/>
+    <PARAM id="arp_repeat" value="1.0"/>
+    <PARAM id="arp_accent" value="0.0"/>
+    <PARAM id="arp_accevery" value="4.0"/>
+    <PARAM id="seq_on" value="0.0"/>
+    <PARAM id="seq_rate" value="13.0"/>
+    <PARAM id="seq_length" value="16.0"/>
+    <PARAM id="seq_swing" value="0.0"/>
+    <PARAM id="seq_transpose" value="0.0"/>
+    <PARAM id="seq_clock" value="1.0"/>
+  </PARAMS>
+  <Macros>
+    <Macro index="0" name="FOG"/>
+    <Macro index="1" name="TONE"/>
+    <Macro index="2" name="SPACE"/>
+    <Macro index="3" name="DRIVE"/>
+  </Macros>
+  <LfoShapes>
+    <Lfo index="0" points="0.0000,-1.0000;0.2500,1.0000;0.5000,-0.2000;0.7500,0.6000;1.0000,-1.0000"/>
+    <Lfo index="1" points="0.0000,-1.0000;0.2500,1.0000;0.5000,-0.2000;0.7500,0.6000;1.0000,-1.0000"/>
+    <Lfo index="2" points="0.0000,-1.0000;0.2500,1.0000;0.5000,-0.2000;0.7500,0.6000;1.0000,-1.0000"/>
+  </LfoShapes>
+  <Sequencer>
+    <Step i="0" on="1" note="48" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.2000000029802322" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="1" on="1" note="55" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.2857142984867096" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="2" on="1" note="60" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.3714285790920258" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="3" on="1" note="63" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.4571428894996643" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="4" on="1" note="48" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.5428571701049805" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="5" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.6285714507102966" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="6" on="1" note="60" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.7142857313156128" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="7" on="1" note="67" vel="0.699999988079071" gate="0.8999999761581421"
+          slide="0.800000011920929" press="0.25" pitch="2.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="8" on="1" note="46" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.2000000029802322" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="9" on="1" note="53" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.2857142984867096" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="10" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.3714285790920258" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="11" on="1" note="62" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.4571428894996643" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="12" on="1" note="46" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.5428571701049805" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="13" on="1" note="55" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.6285714507102966" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="14" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.7142857313156128" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="15" on="1" note="65" vel="0.699999988079071" gate="0.8999999761581421"
+          slide="0.800000011920929" press="0.25" pitch="2.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="16" on="1" note="48" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.2000000029802322" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="17" on="1" note="55" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.2857142984867096" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="18" on="1" note="60" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.3714285790920258" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="19" on="1" note="63" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.4571428894996643" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="20" on="1" note="48" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.5428571701049805" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="21" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.6285714507102966" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="22" on="1" note="60" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.7142857313156128" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="23" on="1" note="67" vel="0.699999988079071" gate="0.8999999761581421"
+          slide="0.800000011920929" press="0.25" pitch="2.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="24" on="1" note="46" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.2000000029802322" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="25" on="1" note="53" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.2857142984867096" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="26" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.3714285790920258" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="27" on="1" note="62" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.4571428894996643" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="28" on="1" note="46" vel="0.8999999761581421" gate="0.449999988079071"
+          slide="0.5428571701049805" press="0.6000000238418579" pitch="0.0"
+          prob="1.0" ratchet="1" accent="1"/>
+    <Step i="29" on="1" note="55" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.6285714507102966" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="30" on="1" note="58" vel="0.699999988079071" gate="0.449999988079071"
+          slide="0.7142857313156128" press="0.25" pitch="0.0" prob="1.0"
+          ratchet="1" accent="0"/>
+    <Step i="31" on="1" note="65" vel="0.699999988079071" gate="0.8999999761581421"
+          slide="0.800000011920929" press="0.25" pitch="2.0" prob="1.0"
+          ratchet="1" accent="0"/>
+  </Sequencer>
+  <ArpPattern steps="0 1 2 1 0 2 3 -1 0 1 2 3 4 3 2 1"/>
+</NeddPE>

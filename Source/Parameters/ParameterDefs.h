@@ -25,7 +25,7 @@ enum class OscField : int
     On, Engine, Wave, PulseWidth, Table, WtPos, Octave, Semi, Fine, Phase, PhaseRandom,
     Level, Pan, Unison, Detune, Spread, FmSource, FmAmount, Sync, Ring, Route, NoiseType,
     FmAlgorithm, Op1Ratio, Op2Ratio, OpFine, Op1Amount, Op2Amount, FmFeedback, FmEnvAmount, FmKeyTrack,
-    SampleRoot, SampleLoop, GrainSize, GrainDensity, GrainSpray, GrainPitchSpray,
+    SampleRoot, SampleLoop, GrainSize, GrainDensity, GrainSpray, GrainPitchSpray, SampleSource,
     Count
 };
 

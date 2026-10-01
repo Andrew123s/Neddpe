@@ -201,6 +201,9 @@ void SynthEngine::handleClipCommands() noexcept
             clipTransport.playing = true;
             clipTransport.recording = true;
             break;
+        case ClipCommand::StopRecord:
+            clipTransport.recording = false;   // keep playing what was recorded
+            break;
         case ClipCommand::None:
             break;
     }
@@ -464,6 +467,7 @@ void SynthEngine::processChunk (juce::AudioBuffer<float>& buffer, int bufferStar
     shared.telemetry.ppq.store (transport.ppqAtBlockStart, std::memory_order_relaxed);
     shared.telemetry.bpm.store (transport.bpm, std::memory_order_relaxed);
     shared.telemetry.hostPlaying.store (transport.hostPlaying, std::memory_order_relaxed);
+    shared.telemetry.hostTransportAvailable.store (transport.hostTransportAvailable, std::memory_order_relaxed);
 
     mainBus.clear (0, numSamples);
     delayBus.clear (0, numSamples);

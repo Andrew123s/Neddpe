@@ -8,6 +8,7 @@ int validateVst3 (const juce::File& file);
 int runBenchmark();
 int dumpParameters (const juce::File& file);
 int exportPresets (const juce::File& directory);
+int renderPresets (const juce::File& directory);
 }
 
 namespace
@@ -57,6 +58,8 @@ int main (int argc, char* argv[])
         return nedd::test::dumpParameters (cwd.getChildFile (args[i + 1].isNotEmpty() ? args[i + 1] : "PARAMETERS.md"));
     if (const int i = args.indexOf ("--export-presets"); i >= 0)
         return nedd::test::exportPresets (cwd.getChildFile (args[i + 1].isNotEmpty() ? args[i + 1] : "presets"));
+    if (const int i = args.indexOf ("--render-presets"); i >= 0)
+        return nedd::test::renderPresets (cwd.getChildFile (args[i + 1].isNotEmpty() ? args[i + 1] : "preset-previews"));
 
     juce::UnitTestRunner runner;
     runner.setAssertOnFailure (false);

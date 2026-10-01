@@ -40,6 +40,7 @@
     <PARAM id="osc1_gdensity" value="30.0"/>
     <PARAM id="osc1_gspray" value="0.1000000014901161"/>
     <PARAM id="osc1_gpitch" value="0.0"/>
+    <PARAM id="osc1_source" value="0.0"/>
     <PARAM id="osc2_on" value="0.0"/>
     <PARAM id="osc2_engine" value="0.0"/>
     <PARAM id="osc2_wave" value="2.0"/>
@@ -77,6 +78,7 @@
     <PARAM id="osc2_gdensity" value="30.0"/>
     <PARAM id="osc2_gspray" value="0.1000000014901161"/>
     <PARAM id="osc2_gpitch" value="0.0"/>
+    <PARAM id="osc2_source" value="0.0"/>
     <PARAM id="osc3_on" value="0.0"/>
     <PARAM id="osc3_engine" value="0.0"/>
     <PARAM id="osc3_wave" value="2.0"/>
@@ -114,6 +116,7 @@
     <PARAM id="osc3_gdensity" value="30.0"/>
     <PARAM id="osc3_gspray" value="0.1000000014901161"/>
     <PARAM id="osc3_gpitch" value="0.0"/>
+    <PARAM id="osc3_source" value="0.0"/>
     <PARAM id="flt_on" value="1.0"/>
     <PARAM id="flt_type" value="0.0"/>
     <PARAM id="flt_cutoff" value="5000.0"/>

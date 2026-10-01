@@ -406,7 +406,8 @@ void Voice::updateControl (const VoiceContext& ctx) noexcept
         else if (ctx.wavetables != nullptr)
             bp.table = &ctx.wavetables->get (std::min (tableIndex, ctx.wavetables->size() - 1));
         if (bp.engine == OscEngine::Sample || bp.engine == OscEngine::Granular)
-            bp.sample = slot != nullptr && slot->sample != nullptr ? slot->sample.get() : &assets::getBuiltInSample();
+            bp.sample = slot != nullptr && slot->sample != nullptr ? slot->sample.get()
+                                                                   : &assets::getBuiltInSample (p.getInt (f (OscField::SampleSource)));
 
         const float oscPitch = voicePitch
                              + destValue (dest, oscDest (ModDest::Osc1Pitch, o)) * getModDestInfo (ModDest::Osc1Pitch).range

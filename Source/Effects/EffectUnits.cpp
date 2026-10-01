@@ -57,9 +57,11 @@ void Distortion::process (float* l, float* r, int n, DistortionType type, float 
     std::copy (r, r + n, dryR.begin());
 
     const float gain = dsp::dbToGain (dsp::clamp01 (drive) * 36.0f);
-    // Level compensation: keep a -10 dBFS signal at the same level whatever the drive.
+    // Level compensation: keep a -10 dBFS signal at the same level whatever the drive. Never boost:
+    // the wavefolder passes through zero at some drives, where dividing by its output would add
+    // up to +16 dB and clip.
     const float reference = 0.3f;
-    const float compensation = reference / std::max (0.05f, std::abs (shape (reference * gain, type)));
+    const float compensation = std::min (1.0f, reference / std::max (0.05f, std::abs (shape (reference * gain, type))));
 
     auto run = [&] (float* const* channels, int numSamples)
     {

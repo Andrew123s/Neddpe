@@ -109,10 +109,13 @@ namespace assets
     juce::String getAudioFileWildcard();
 
     /**
-        The source the Granular and Sample engines play when no sample has been imported: a
-        4-second evolving vowel texture pitched at middle C (note 60), generated at start-up.
+        The sources the Granular and Sample engines play when no sample has been imported
+        (chosen per oscillator with the Built-in Source parameter). Generated once at start-up from
+        the factory wavetables and simple DSP, stereo, pitched at middle C (note 60).
+        Choice list: append only.
     */
-    const SampleData& getBuiltInSample();
+    juce::StringArray getBuiltInSampleNames();
+    const SampleData& getBuiltInSample (int index = 0);
 }
 
 } // namespace nedd

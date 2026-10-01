@@ -1,5 +1,7 @@
 #include "Parameters/ParameterDefs.h"
 #include "Presets/FactoryPresets.h"
+#include "PluginProcessor/PluginProcessor.h"
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 
 namespace nedd::test
@@ -111,6 +113,93 @@ int dumpParameters (const juce::File& file)
 }
 
 /** Writes every factory preset as a .neddpe file (the same format as user presets). */
+/**
+    Renders every factory preset to a WAV preview: a four-note MPE chord held for four seconds
+    while each note's pressure swells and its slide moves, then released into the tail.
+    Prints peak and RMS so silent or clipping presets stand out.
+*/
+int renderPresets (const juce::File& directory)
+{
+    directory.createDirectory();
+    constexpr double rate = 48000.0;
+    constexpr int block = 256;
+    constexpr double holdSeconds = 4.0, tailSeconds = 3.0;
+    const int notes[] = { 48, 55, 62, 64 };
+    int problems = 0;
+
+    const auto& library = getFactoryPresets();
+    for (int i = 0; i < (int) library.size(); ++i)
+    {
+        auto owner = std::make_unique<NeddPEAudioProcessor>();   // large: keep it off the stack
+        auto& processor = *owner;
+        processor.setPlayConfigDetails (0, 2, rate, block);
+        processor.prepareToPlay (rate, block);
+        processor.applyState (makeFactoryPreset (i), {});
+
+        const int totalBlocks = (int) ((holdSeconds + tailSeconds) * rate / block);
+        juce::AudioBuffer<float> out (2, totalBlocks * block);
+        juce::AudioBuffer<float> buffer (2, block);
+        juce::MidiBuffer midi;
+
+        for (int b = 0; b < totalBlocks; ++b)
+        {
+            const double t = (double) b * block / rate;
+            midi.clear();
+            if (b == 0)
+                for (int n = 0; n < 4; ++n)
+                    midi.addEvent (juce::MidiMessage::noteOn (2 + n, notes[n], 0.75f), 0);
+            if (t < holdSeconds && b % 4 == 0)
+            {
+                for (int n = 0; n < 4; ++n)
+                {
+                    const double x = t / holdSeconds;
+                    const float pressure = (float) std::sin (juce::MathConstants<double>::pi * x) * (0.6f + 0.1f * (float) n);
+                    const float slide = (float) (0.5 + 0.45 * std::sin (2.0 * juce::MathConstants<double>::pi * (x * 1.5 + 0.25 * n)));
+                    midi.addEvent (juce::MidiMessage::channelPressureChange (2 + n, juce::jlimit (0, 127, (int) (pressure * 127.0f))), 0);
+                    midi.addEvent (juce::MidiMessage::controllerEvent (2 + n, 74, juce::jlimit (0, 127, (int) (slide * 127.0f))), 0);
+                }
+            }
+            if (b == (int) (holdSeconds * rate / block))
+                for (int n = 0; n < 4; ++n)
+                    midi.addEvent (juce::MidiMessage::noteOff (2 + n, notes[n], 0.5f), 0);
+
+            buffer.clear();
+            processor.processBlock (buffer, midi);
+            for (int c = 0; c < 2; ++c)
+                out.copyFrom (c, b * block, buffer, c, 0, block);
+            processor.getShared().lfoShapes.collectGarbage();
+        }
+        processor.releaseResources();
+
+        float peak = 0.0f;
+        double sum = 0.0;
+        for (int c = 0; c < 2; ++c)
+            for (int s = 0; s < out.getNumSamples(); ++s)
+            {
+                const float v = out.getSample (c, s);
+                peak = std::max (peak, std::abs (v));
+                sum += (double) v * v;
+            }
+        const double rms = std::sqrt (sum / (2.0 * out.getNumSamples()));
+        const auto& preset = library[(size_t) i];
+        const bool bad = peak < 0.01f || peak > 0.999f;
+        problems += bad ? 1 : 0;
+        std::cout << (bad ? "[!!] " : "     ") << juce::String (preset.category).paddedRight (' ', 16) << juce::String (preset.name).paddedRight (' ', 22)
+                  << " peak " << juce::String (juce::Decibels::gainToDecibels (peak), 1) << " dB   rms "
+                  << juce::String (juce::Decibels::gainToDecibels ((float) rms), 1) << " dB\n";
+
+        const auto file = directory.getChildFile (juce::File::createLegalFileName (juce::String (preset.category) + " - " + preset.name) + ".wav");
+        file.deleteFile();
+        std::unique_ptr<juce::OutputStream> stream = std::make_unique<juce::FileOutputStream> (file);
+        juce::WavAudioFormat wav;
+        if (auto writer = wav.createWriterFor (stream, juce::AudioFormatWriterOptions().withSampleRate (rate).withNumChannels (2).withBitsPerSample (24)))
+            writer->writeFromAudioSampleBuffer (out, 0, out.getNumSamples());
+    }
+
+    std::cout << problems << " preset(s) silent or clipping\n";
+    return problems == 0 ? 0 : 1;
+}
+
 int exportPresets (const juce::File& directory)
 {
     int written = 0;

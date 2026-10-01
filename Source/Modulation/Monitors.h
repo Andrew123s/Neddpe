@@ -56,6 +56,7 @@ struct EngineTelemetry
     std::atomic<double> ppq { 0.0 };
     std::atomic<double> bpm { 120.0 };
     std::atomic<bool> hostPlaying { false };
+    std::atomic<bool> hostTransportAvailable { false };   // the host provides a song position (not the standalone app)
     std::atomic<int> arpStep { -1 };
     std::atomic<int> seqStep { -1 };
     std::atomic<double> clipPosition { 0.0 };

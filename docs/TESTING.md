@@ -74,6 +74,15 @@ The dominant cost is the per-sample voice loop (about 0.5% of a core per voice f
 filter in 0.1). Version 0.2 renders unison sub-voices of the analog and FM engines four at a time with SIMD; the
 control-rate work is already small (the Eco-to-Ultra spread above).
 
+## Preset previews
+
+```bash
+NeddPETests.exe --render-presets previews
+```
+
+Renders every factory preset to a WAV file (a four-note MPE chord with moving pressure and slide, then the release
+tail) and prints each preset's peak and RMS level; silent or clipping presets are flagged.
+
 ## Documentation generators
 
 ```bash

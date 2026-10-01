@@ -57,6 +57,17 @@ namespace
             return tune (o, level, octave, 0, 0.0f);
         }
 
+        /** Sample engine playing a built-in source (unless the oscillator has an imported sample), looped. */
+        Build& sample (int o, int builtInSource, float start, float level, int octave = 0)
+        {
+            osc (o, OscField::On, 1.0f).osc (o, OscField::Engine, (float) OscEngine::Sample).osc (o, OscField::WtPos, start)
+                .osc (o, OscField::SampleLoop, 1.0f);
+            source (o, builtInSource);
+            return tune (o, level, octave, 0, 0.0f);
+        }
+
+        Build& source (int o, int builtInSource) { return osc (o, OscField::SampleSource, (float) builtInSource); }
+
         Build& noise (int o, NoiseType type, float level, float spread = 0.6f)
         {
             osc (o, OscField::On, 1.0f).osc (o, OscField::Engine, (float) OscEngine::Noise).osc (o, OscField::NoiseType, (float) type)
@@ -184,6 +195,229 @@ namespace
     std::vector<FactoryPreset> buildLibrary()
     {
         std::vector<FactoryPreset> p;
+
+        // ================================================================== DREAMY
+        p.push_back ({ "Cotton Cloud", "Dreamy", "Glass grains over a soft triangle bed. Slide drifts through the source, pressure thickens the cloud.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.3f, 0.18f, 26.0f, 0.25f, 0.08f, 0.75f).source (0, 1).osc (0, OscField::Spread, 0.9f)
+                .analog (1, W::Triangle, 0.3f, -1).unison (1, 3, 0.12f, 0.6f)
+                .filter (F::LowPass12, 4200.0f, 0.12f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.9f, 2.0f, 0.85f, 3.5f, 0.4f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.45f).route (S::MpePressure, D::GrainDensity, 0.5f)
+                .route (S::MpePressure, D::FilterCutoff, 0.2f).route (S::Lfo1, D::Pan, 0.25f)
+                .lfo (0, LfoShape::SmoothRandom, 0.2f, 1.0f, false)
+                .macros (D::GrainSize, 0.5f, "HAZE").chorus (0.35f, 0.6f, 0.25f).delay ("1/4.", 0.45f, 0.25f)
+                .reverb (0.88f, 0.5f, 0.65f).amp (0.75f, 0.3f); } });
+
+        p.push_back ({ "Lullaby Keys", "Dreamy", "Music-box FM keys with an octave sine halo. Velocity sets the sparkle, slide adds a gentle vibrato.",
+            [] (PresetState& s) { Build (s)
+                .fm (0, FmAlgorithm::Parallel, 5, 9, 0.24f, 0.06f, 0.0f, 0.75f, 0.6f)
+                .analog (1, W::Sine, 0.22f, 1)
+                .filter (F::LowPass12, 7000.0f, 0.05f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.002f, 2.6f, 0.0f, 1.8f).env (pid::modEnv, 0.001f, 0.8f, 0.1f, 0.8f)
+                .route (S::Velocity, D::Osc1Fm, 0.4f).route (S::MpePressure, D::Osc2Level, 0.4f)
+                .route (S::Lfo1, D::Pitch, 0.004f).route (S::MpeSlide, D::Lfo1Depth, 0.8f)
+                .lfo (0, LfoShape::Sine, 4.8f, 0.0f)
+                .macros (D::Osc1Fm, 0.4f, "SPARKLE").chorus (0.4f, 0.55f, 0.4f).delay ("1/8.", 0.4f, 0.3f)
+                .reverb (0.75f, 0.45f, 0.6f).amp (0.6f, 0.55f); } });
+
+        p.push_back ({ "Sugar Haze", "Dreamy", "Wide, sweet supersaw haze through a breathing low-pass. Pressure opens it, slide shifts the harmonics.",
+            [] (PresetState& s) { Build (s)
+                .wavetable (0, 2, 0.35f, 0.62f).unison (0, 7, 0.28f, 1.0f)
+                .analog (1, W::Saw, 0.32f, -1).unison (1, 3, 0.15f, 0.7f)
+                .filter (F::LowPass24, 1400.0f, 0.25f, 0.25f, 0.4f)
+                .env (pid::ampEnv, 0.4f, 1.5f, 0.9f, 2.2f).env (pid::filterEnv, 1.2f, 2.0f, 0.6f, 2.0f, 0.0f)
+                .route (S::Lfo1, D::FilterCutoff, 0.12f).route (S::MpePressure, D::FilterCutoff, 0.35f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.4f)
+                .lfo (0, LfoShape::Triangle, 0.12f, 1.0f, false)
+                .fx (FxField::PhaserOn, 1.0f).fx (FxField::PhaserRate, 0.15f).fx (FxField::PhaserDepth, 0.6f)
+                .fx (FxField::PhaserFeedback, 0.3f).fx (FxField::PhaserMix, 0.25f)
+                .macros (D::UnisonDetune, 0.5f, "BLOOM").chorus (0.4f).reverb (0.8f, 0.4f, 0.6f).amp (0.5f, 0.3f); } });
+
+        p.push_back ({ "Rose Quartz", "Dreamy", "A slowly turning glass wavetable with a faint FM bell above it. Slide polishes the facets.",
+            [] (PresetState& s) { Build (s)
+                .wavetable (0, 7, 0.2f, 0.6f).unison (0, 4, 0.12f, 0.9f)
+                .fm (1, FmAlgorithm::Stack, 3, 5, 0.18f, 0.05f, 0.0f, 0.3f, 0.22f, 1)
+                .filter (F::LowPass12, 6000.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 1.2f, 2.0f, 0.9f, 4.0f, 0.3f)
+                .route (S::Lfo1, D::Osc1WtPos, 0.35f).route (S::MpeSlide, D::Osc1WtPos, 0.4f).route (S::MpePressure, D::Osc2Level, 0.5f)
+                .lfo (0, LfoShape::Sine, 0.07f, 1.0f, false)
+                .macros (D::Osc1WtPos, 0.5f, "FACET").delay ("1/2", 0.5f, 0.3f).reverb (0.92f, 0.55f, 0.7f).amp (0.52f, 0.3f); } });
+
+        p.push_back ({ "Daydream Pluck", "Dreamy", "Soft rounded pluck dissolving into ping-pong echoes. Lean on a note to send it further into the delay.",
+            [] (PresetState& s) { Build (s)
+                .wavetable (0, 0, 0.22f, 0.65f).unison (0, 3, 0.1f, 0.7f)
+                .filter (F::LowPass24, 900.0f, 0.18f, 0.55f, 0.5f)
+                .env (pid::ampEnv, 0.002f, 1.2f, 0.0f, 1.2f).env (pid::filterEnv, 0.001f, 0.6f, 0.0f, 0.6f)
+                .route (S::MpePressure, D::DelaySend, 0.45f).route (S::MpeSlide, D::FilterCutoff, 0.3f)
+                .macros (D::FilterEnvAmount, 0.4f, "SOFTEN").chorus (0.3f).delay ("1/8.", 0.55f, 0.4f).reverb (0.7f, 0.35f).amp (1.00f, 0.6f); } });
+
+        p.push_back ({ "Pastel Choir", "Dreamy", "A granular choir with a formant wavetable humming beneath. Slide moves the singers through their vowels.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.4f, 0.22f, 30.0f, 0.2f, 0.05f, 0.75f).source (0, 2).osc (0, OscField::Spread, 0.8f)
+                .wavetable (1, 3, 0.5f, 0.28f).unison (1, 3, 0.1f, 0.6f)
+                .filter (F::LowPass12, 5000.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.8f, 2.0f, 0.9f, 3.0f, 0.4f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.4f).route (S::MpeSlide, D::Osc2WtPos, 0.4f)
+                .route (S::Lfo1, D::Osc2WtPos, 0.15f).lfo (0, LfoShape::SmoothRandom, 0.25f, 1.0f, false)
+                .macros (D::GrainDensity, 0.5f, "BREATH").chorus (0.3f).reverb (0.9f, 0.5f, 0.65f).amp (1.00f, 0.25f, 0.3f); } });
+
+        p.push_back ({ "Silk Arp", "Dreamy", "A gentle up-down arpeggio of glassy plucks over two octaves, trailing soft echoes.",
+            [] (PresetState& s) { Build (s)
+                .fm (0, FmAlgorithm::Stack, 3, 2, 0.2f, 0.0f, 0.0f, 0.8f, 0.6f)
+                .analog (1, W::Triangle, 0.25f)
+                .filter (F::LowPass12, 6500.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.002f, 0.6f, 0.0f, 0.5f).env (pid::modEnv, 0.001f, 0.25f, 0.0f, 0.2f)
+                .arp (ArpField::On, 1.0f).arp (ArpField::Mode, (float) ArpMode::UpDown).arp (ArpField::Division, (float) divisionIndex ("1/16"))
+                .arp (ArpField::Octaves, 2.0f).arp (ArpField::Gate, 0.45f)
+                .route (S::MpePressure, D::Osc1Fm, 0.4f).route (S::MpeSlide, D::FilterCutoff, 0.25f)
+                .macros (D::Osc1Fm, 0.4f, "GLINT").delay ("1/8.", 0.5f, 0.35f).reverb (0.75f, 0.4f).amp (0.55f, 0.5f); } });
+
+        // ================================================================== DARK
+        p.push_back ({ "Midnight Drone", "Dark", "A deep granular drone with a sub, a saturated ladder and a slowly wandering cutoff. Slide opens the abyss.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.5f, 0.3f, 20.0f, 0.15f, 0.0f, 0.8f, -1).source (0, 5).osc (0, OscField::Spread, 0.7f)
+                .analog (1, W::Sine, 0.4f, -2)
+                .filter (F::Ladder, 700.0f, 0.3f, 0.0f, 0.2f, 0.25f)
+                .env (pid::ampEnv, 1.5f, 3.0f, 1.0f, 4.0f, 0.3f)
+                .route (S::Lfo1, D::FilterCutoff, 0.15f).route (S::MpeSlide, D::FilterCutoff, 0.4f).route (S::MpePressure, D::FilterDrive, 0.5f)
+                .lfo (0, LfoShape::SmoothRandom, 0.15f, 1.0f, false)
+                .fx (FxField::SatOn, 1.0f).fx (FxField::SatDrive, 0.35f).fx (FxField::SatWarmth, 0.7f).fx (FxField::SatMix, 0.6f)
+                .macros (D::FilterResonance, 0.4f, "ABYSS").reverb (0.9f, 0.4f, 0.6f).fx (FxField::ReverbDamping, 0.75f).amp (0.6f, 0.2f); } });
+
+        p.push_back ({ "Obsidian Bass", "Dark", "Mono legato growl over a sub: pressure grinds the ladder, slide scans the growl table.",
+            [] (PresetState& s) { Build (s)
+                .wavetable (0, 4, 0.25f, 0.7f)
+                .analog (1, W::Sine, 0.6f, -1)
+                .filter (F::Ladder, 250.0f, 0.4f, 0.45f, 0.4f, 0.2f)
+                .env (pid::ampEnv, 0.003f, 0.6f, 0.85f, 0.2f).env (pid::filterEnv, 0.001f, 0.35f, 0.2f, 0.2f)
+                .g (GlobalField::VoiceMode, (float) VoiceMode::Legato).g (GlobalField::GlideMode, (float) GlideMode::Legato).g (GlobalField::Glide, 0.06f)
+                .route (S::MpePressure, D::FilterCutoff, 0.35f).route (S::MpePressure, D::FilterDrive, 0.5f).route (S::MpeSlide, D::Osc1WtPos, 0.6f)
+                .fx (FxField::DistOn, 1.0f).fx (FxField::DistType, (float) DistortionType::Tube).fx (FxField::DistDrive, 0.3f).fx (FxField::DistMix, 0.4f)
+                .macros (D::Osc1WtPos, 0.5f, "GROWL").fx (FxField::ReverbSend, 0.05f).fx (FxField::DelaySend, 0.0f).amp (0.80f, 0.5f); } });
+
+        p.push_back ({ "Haunted Bells", "Dark", "Detuned inharmonic bells with a scattered bell cloud an octave below, ringing into a dark hall.",
+            [] (PresetState& s) { Build (s)
+                .fm (0, FmAlgorithm::Branch, 4, 7, 0.35f, 0.2f, 0.1f, 0.6f, 0.6f).osc (0, OscField::OpFine, 0.137f)
+                .granular (1, 0.2f, 0.15f, 14.0f, 0.5f, 0.1f, 0.25f, -1).source (1, 4)
+                .filter (F::LowPass12, 4500.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.002f, 4.5f, 0.0f, 4.0f).env (pid::modEnv, 0.001f, 2.5f, 0.0f, 2.0f)
+                .route (S::MpeSlide, D::Osc1Fm, 0.4f).route (S::MpePressure, D::Osc2Level, 0.5f).route (S::Velocity, D::Osc1Fm, 0.3f)
+                .macros (D::Osc1Fm, 0.4f, "HAUNT").delay ("1/4.", 0.45f, 0.25f).reverb (0.85f, 0.5f, 0.6f).fx (FxField::ReverbDamping, 0.6f)
+                .amp (0.55f, 0.6f); } });
+
+        p.push_back ({ "Ashen Pad", "Dark", "Low, smouldering saws under a slow phaser. Pressure lets light in, slide widens the smoke.",
+            [] (PresetState& s) { Build (s)
+                .analog (0, W::Saw, 0.55f).unison (0, 6, 0.18f, 1.0f)
+                .analog (1, W::Saw, 0.4f, -1).unison (1, 4, 0.12f, 0.7f)
+                .filter (F::LowPass24, 450.0f, 0.2f, 0.3f, 0.35f)
+                .env (pid::ampEnv, 1.8f, 2.0f, 0.9f, 4.0f, 0.3f).env (pid::filterEnv, 2.5f, 3.0f, 0.4f, 3.0f, 0.0f)
+                .route (S::MpePressure, D::FilterCutoff, 0.45f).route (S::MpeSlide, D::StereoWidth, 0.3f)
+                .fx (FxField::PhaserOn, 1.0f).fx (FxField::PhaserRate, 0.08f).fx (FxField::PhaserDepth, 0.7f)
+                .fx (FxField::PhaserFeedback, 0.5f).fx (FxField::PhaserMix, 0.35f)
+                .fx (FxField::EqOn, 1.0f).fx (FxField::EqLowGain, 2.0f).fx (FxField::EqHighGain, -4.0f)
+                .macros (D::FilterCutoff, 0.4f, "EMBER").reverb (0.85f, 0.4f, 0.6f).amp (0.5f, 0.3f); } });
+
+        p.push_back ({ "Void Choir", "Dark", "A choir an octave down, half dissolved into breath. Pressure parts the fog, slide drifts the voices.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.3f, 0.35f, 18.0f, 0.3f, 0.0f, 0.8f, -1).source (0, 2).osc (0, OscField::Spread, 0.9f)
+                .granular (1, 0.5f, 0.12f, 40.0f, 0.6f, 0.2f, 0.35f).source (1, 3)
+                .filter (F::LowPass12, 1800.0f, 0.2f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 1.5f, 2.0f, 1.0f, 5.0f, 0.3f)
+                .route (S::MpePressure, D::FilterCutoff, 0.35f).route (S::MpeSlide, D::Osc1WtPos, 0.5f).route (S::MpeSlide, D::Osc2WtPos, -0.3f)
+                .macros (D::GrainDensity, 0.5f, "FOG").reverb (0.95f, 0.6f, 0.7f).fx (FxField::ReverbDamping, 0.7f).amp (0.90f, 0.2f); } });
+
+        p.push_back ({ "Undertow", "Dark", "A pad that pulls in eighth notes: a tempo-synced filter tide under deep reverb. Pressure deepens the pull.",
+            [] (PresetState& s) { Build (s)
+                .analog (0, W::Saw, 0.5f).unison (0, 5, 0.15f, 0.9f)
+                .analog (1, W::Pulse, 0.35f, -1).osc (1, OscField::PulseWidth, 0.3f)
+                .filter (F::Ladder, 600.0f, 0.35f, 0.0f, 0.4f)
+                .env (pid::ampEnv, 0.3f, 1.5f, 0.9f, 2.0f)
+                .lfoSync (0, LfoShape::Triangle, "1/8", true)
+                .route (S::Lfo1, D::FilterCutoff, 0.3f).route (S::MpePressure, D::Lfo1Depth, 0.5f).route (S::MpeSlide, D::FilterResonance, 0.3f)
+                .lfoField (0, LfoField::Amount, 0.5f)
+                .macros (D::FilterCutoff, 0.35f, "TIDE").delay ("1/4.", 0.4f, 0.2f).reverb (0.85f, 0.4f).amp (0.5f, 0.3f); } });
+
+        p.push_back ({ "Velvet Noir", "Dark", "Dark electric-piano FM with a warm tremolo that pressure brings in. Smoky and close.",
+            [] (PresetState& s) { Build (s)
+                .fm (0, FmAlgorithm::Stack, 2, 5, 0.26f, 0.05f, 0.05f, 0.5f, 0.65f)
+                .filter (F::LowPass12, 1500.0f, 0.1f, 0.3f, 0.5f)
+                .env (pid::ampEnv, 0.002f, 3.0f, 0.2f, 0.8f).env (pid::modEnv, 0.001f, 1.2f, 0.1f, 0.6f)
+                .lfo (0, LfoShape::Sine, 4.5f, 0.0f, false)
+                .route (S::Lfo1, D::AmpLevel, 0.25f).route (S::MpePressure, D::Lfo1Depth, 0.8f).route (S::Velocity, D::Osc1Fm, 0.4f)
+                .fx (FxField::SatOn, 1.0f).fx (FxField::SatDrive, 0.3f).fx (FxField::SatWarmth, 0.8f).fx (FxField::SatMix, 0.5f)
+                .macros (D::Osc1Fm, 0.4f, "BARK").reverb (0.6f, 0.3f).fx (FxField::ReverbDamping, 0.7f).amp (0.65f, 0.6f); } });
+
+        // ================================================================== ETHEREAL
+        p.push_back ({ "Halo", "Ethereal", "Long glass grains shimmering an octave up over a pure sine choir, lost in an endless hall.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.6f, 0.45f, 32.0f, 0.15f, 0.12f, 0.65f, 1).source (0, 1).osc (0, OscField::Spread, 1.0f)
+                .analog (1, W::Sine, 0.4f).unison (1, 3, 0.1f, 0.8f)
+                .filter (F::HighPass12, 200.0f, 0.05f, 0.0f, 0.0f)
+                .env (pid::ampEnv, 1.5f, 2.5f, 1.0f, 5.0f, 0.3f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.3f).route (S::MpePressure, D::GrainSize, -0.3f).route (S::MpePressure, D::Osc1Level, 0.3f)
+                .macros (D::GrainDensity, 0.5f, "SHIMMER").delay ("1/4.", 0.5f, 0.35f).reverb (0.95f, 0.65f, 0.75f).amp (0.55f, 0.2f); } });
+
+        p.push_back ({ "Angel Breath", "Ethereal", "Breath and whispered vowels. Each note only sounds as much as you press it.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.5f, 0.25f, 45.0f, 0.4f, 0.0f, 0.8f).source (0, 3).osc (0, OscField::Spread, 1.0f)
+                .wavetable (1, 3, 0.6f, 0.3f).unison (1, 3, 0.12f, 0.8f)
+                .filter (F::LowPass12, 8000.0f, 0.05f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.6f, 1.5f, 1.0f, 3.0f, 0.3f)
+                .route (S::Lfo1, D::Osc2WtPos, 0.3f).route (S::MpeSlide, D::Osc1WtPos, 0.4f)
+                .lfo (0, LfoShape::Sine, 0.09f, 1.0f, false)
+                .macros (D::GrainSize, 0.5f, "WHISPER").reverb (0.9f, 0.55f, 0.7f).amp (0.85f, 0.1f, 0.6f); } });
+
+        p.push_back ({ "Aurora Veil", "Ethereal", "Two wavetables drifting on independent slow currents. Slide pulls the colours through each note.",
+            [] (PresetState& s) { Build (s)
+                .wavetable (0, 2, 0.1f, 0.55f).unison (0, 5, 0.18f, 1.0f)
+                .wavetable (1, 7, 0.4f, 0.4f, 1).unison (1, 3, 0.1f, 0.8f)
+                .filter (F::LowPass12, 7000.0f, 0.1f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 2.0f, 2.0f, 0.9f, 5.0f, 0.3f)
+                .lfo (0, LfoShape::Sine, 0.05f, 1.0f, false).lfo (1, LfoShape::Triangle, 0.08f, 1.0f, false)
+                .route (S::Lfo1, D::Osc1WtPos, 0.5f).route (S::Lfo2, D::Osc2WtPos, 0.4f).route (S::MpeSlide, D::Osc1WtPos, 0.3f)
+                .fx (FxField::PhaserOn, 1.0f).fx (FxField::PhaserRate, 0.06f).fx (FxField::PhaserMix, 0.2f)
+                .macros (D::Osc2WtPos, 0.5f, "DRIFT").chorus (0.35f).reverb (0.92f, 0.5f, 0.7f).amp (0.52f, 0.25f); } });
+
+        p.push_back ({ "Celestial Bells", "Ethereal", "A slow rain of bells above a soft FM chime, echoing far away.",
+            [] (PresetState& s) { Build (s)
+                .granular (0, 0.3f, 0.3f, 10.0f, 0.4f, 0.0f, 0.55f, 1).source (0, 4).osc (0, OscField::Spread, 1.0f)
+                .fm (1, FmAlgorithm::Parallel, 3, 8, 0.25f, 0.1f, 0.0f, 0.5f, 0.45f)
+                .filter (F::LowPass12, 9000.0f, 0.05f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.01f, 5.0f, 0.3f, 5.0f).env (pid::modEnv, 0.001f, 1.5f, 0.0f, 1.5f)
+                .route (S::MpePressure, D::GrainDensity, 0.6f).route (S::MpeSlide, D::Osc1WtPos, 0.4f).route (S::Velocity, D::Osc2Fm, 0.3f)
+                .macros (D::GrainDensity, 0.5f, "RAIN").delay ("1/4.", 0.55f, 0.35f).reverb (0.92f, 0.55f, 0.7f).amp (0.55f, 0.5f); } });
+
+        p.push_back ({ "Moonlit Strings", "Ethereal", "Slow, silvery strings: pressure swells each note, slide adds a singer's vibrato.",
+            [] (PresetState& s) { Build (s)
+                .analog (0, W::Saw, 0.55f).unison (0, 6, 0.2f, 1.0f)
+                .analog (1, W::Pulse, 0.38f).osc (1, OscField::PulseWidth, 0.3f).unison (1, 3, 0.12f, 0.7f)
+                .filter (F::LowPass24, 2800.0f, 0.1f, 0.15f, 0.4f)
+                .env (pid::ampEnv, 0.8f, 1.5f, 0.9f, 2.5f, 0.3f)
+                .lfo (0, LfoShape::Sine, 5.2f, 0.0f).lfo (1, LfoShape::Triangle, 0.3f, 1.0f, false)
+                .route (S::Lfo1, D::Pitch, 0.005f).route (S::MpeSlide, D::Lfo1Depth, 0.9f).route (S::Lfo2, D::Osc2Pw, 0.3f)
+                .route (S::MpePressure, D::FilterCutoff, 0.3f)
+                .macros (D::FilterCutoff, 0.4f, "SILVER").chorus (0.3f).reverb (0.85f, 0.45f, 0.65f).amp (0.55f, 0.3f, 0.5f); } });
+
+        p.push_back ({ "Floating Garden", "Ethereal", "A looped glass bloom with bells scattered above it. Slide moves where the bloom starts.",
+            [] (PresetState& s) { Build (s)
+                .sample (0, 1, 0.1f, 0.6f).unison (0, 3, 0.1f, 0.8f)
+                .granular (1, 0.5f, 0.08f, 8.0f, 0.6f, 0.0f, 0.3f, 1).source (1, 4).osc (1, OscField::Spread, 1.0f)
+                .filter (F::LowPass12, 7500.0f, 0.05f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.6f, 2.0f, 0.9f, 4.0f, 0.3f)
+                .route (S::MpeSlide, D::Osc1WtPos, 0.3f).route (S::MpePressure, D::Osc2Level, 0.5f)
+                .macros (D::GrainDensity, 0.5f, "PETALS").delay ("1/8.", 0.45f, 0.3f).reverb (0.9f, 0.5f, 0.7f).amp (0.80f, 0.3f); } });
+
+        p.push_back ({ "Prism Rain", "Ethereal", "Random glass droplets across three octaves, ping-ponging into a wide hall.",
+            [] (PresetState& s) { Build (s)
+                .fm (0, FmAlgorithm::Stack, 4, 2, 0.18f, 0.0f, 0.0f, 0.9f, 0.6f)
+                .analog (1, W::Sine, 0.25f, 1)
+                .filter (F::LowPass12, 8000.0f, 0.05f, 0.0f, 0.3f)
+                .env (pid::ampEnv, 0.002f, 0.5f, 0.0f, 0.6f).env (pid::modEnv, 0.001f, 0.2f, 0.0f, 0.2f)
+                .arp (ArpField::On, 1.0f).arp (ArpField::Mode, (float) ArpMode::Random).arp (ArpField::Division, (float) divisionIndex ("1/16"))
+                .arp (ArpField::Octaves, 3.0f).arp (ArpField::Gate, 0.35f).arp (ArpField::Probability, 0.8f)
+                .route (S::MpePressure, D::Osc1Fm, 0.4f).route (S::MpeSlide, D::DelaySend, 0.4f)
+                .macros (D::Osc1Fm, 0.4f, "PRISM").chorus (0.25f).delay ("1/8.", 0.6f, 0.45f).reverb (0.85f, 0.5f, 0.7f).amp (0.75f, 0.5f); } });
 
         // ------------------------------------------------------------------ LEADS
         p.push_back ({ "Nedd Lead", "Leads", "Warm unison lead. Pressure opens the filter, slide adds bite, glide on legato.",
@@ -452,21 +686,21 @@ namespace
 
         p.push_back ({ "Grain Choir", "Atmospheric", "Granular vowels: slide moves each note through the source, pressure thickens the cloud.",
             [] (PresetState& s) { Build (s)
-                .granular (0, 0.35f, 0.12f, 24.0f, 0.2f, 0.05f, 0.8f).osc (0, OscField::Spread, 0.8f)
+                .granular (0, 0.35f, 0.12f, 24.0f, 0.2f, 0.05f, 0.8f).source (0, 2).osc (0, OscField::Spread, 0.8f)
                 .filter (F::LowPass12, 7000.0f, 0.1f, 0.0f, 0.3f)
                 .env (pid::ampEnv, 0.6f, 1.5f, 0.9f, 2.5f)
                 .route (S::MpeSlide, D::Osc1WtPos, 0.5f).route (S::MpePressure, D::GrainDensity, 0.5f)
                 .route (S::Lfo1, D::Osc1WtPos, 0.08f).lfo (0, LfoShape::SmoothRandom, 0.3f, 1.0f, false)
-                .macros (D::GrainSize, 0.6f, "GRAIN").reverb (0.85f, 0.5f, 0.6f).amp (0.55f, 0.3f); } });
+                .macros (D::GrainSize, 0.6f, "GRAIN").reverb (0.85f, 0.5f, 0.6f).amp (0.95f, 0.3f); } });
 
         p.push_back ({ "Frozen Shimmer", "Experimental", "Long, pitch-scattered grains an octave up; pressure sprays them further.",
             [] (PresetState& s) { Build (s)
-                .granular (0, 0.6f, 0.4f, 40.0f, 0.1f, 0.3f, 0.7f, 1).osc (0, OscField::Spread, 1.0f)
-                .granular (1, 0.2f, 0.25f, 12.0f, 0.4f, 0.0f, 0.4f, -1)
+                .granular (0, 0.6f, 0.4f, 40.0f, 0.1f, 0.3f, 0.7f, 1).source (0, 1).osc (0, OscField::Spread, 1.0f)
+                .granular (1, 0.2f, 0.25f, 12.0f, 0.4f, 0.0f, 0.4f, -1).source (1, 0)
                 .filter (F::HighPass12, 180.0f, 0.1f, 0.0f, 0.0f)
                 .env (pid::ampEnv, 1.2f, 2.0f, 1.0f, 3.5f)
                 .route (S::MpePressure, D::GrainSize, -0.4f).route (S::MpeSlide, D::Osc1WtPos, 0.4f).route (S::MpeSlide, D::Osc2WtPos, -0.3f)
-                .macros (D::GrainDensity, 0.5f, "DENSITY").delay ("1/4.", 0.5f, 0.35f).reverb (0.95f, 0.6f, 0.7f).amp (0.5f, 0.2f); } });
+                .macros (D::GrainDensity, 0.5f, "DENSITY").delay ("1/4.", 0.5f, 0.35f).reverb (0.95f, 0.6f, 0.7f).amp (0.75f, 0.2f); } });
 
         // ------------------------------------------------------------------ EXPERIMENTAL
         p.push_back ({ "Glitch Ratchet", "Experimental", "Random ratcheting arp through a crusher; S&H jumps the filter.",
@@ -484,13 +718,13 @@ namespace
         p.push_back ({ "Crackle Engine", "Experimental", "Pitched crackle ring-modulated by a saw and wavefolded.",
             [] (PresetState& s) { Build (s)
                 .analog (0, W::Saw, 0.0f, -1)
-                .noise (1, NoiseType::Crackle, 0.9f, 0.5f).osc (1, OscField::Ring, 0.8f)
+                .noise (1, NoiseType::Crackle, 0.6f, 0.5f).osc (1, OscField::Ring, 0.8f)
                 .analog (2, W::Sine, 0.4f)
                 .filter (F::LowPass12, 4000.0f, 0.3f, 0.0f, 0.5f)
                 .env (pid::ampEnv, 0.01f, 0.8f, 0.7f, 0.5f)
                 .route (S::MpePressure, D::DistDrive, 0.5f).route (S::MpeSlide, D::FilterCutoff, 0.4f)
                 .fx (FxField::DistOn, 1.0f).fx (FxField::DistType, (float) DistortionType::Fold).fx (FxField::DistDrive, 0.3f).fx (FxField::DistMix, 0.6f)
-                .macros (D::DistDrive, 0.5f, "FOLD").reverb (0.5f, 0.25f).amp (0.5f); } });
+                .macros (D::DistDrive, 0.5f, "FOLD").reverb (0.5f, 0.25f).amp (0.4f); } });
 
         p.push_back ({ "Random Mutant", "Experimental", "Digital noise pitched to the keys; sample & hold rearranges the wavetable.",
             [] (PresetState& s) { Build (s)
@@ -556,7 +790,7 @@ namespace
                 .env (pid::ampEnv, 0.001f, 0.25f, 0.2f, 0.15f).env (pid::filterEnv, 0.0f, 0.18f, 0.0f, 0.1f)
                 .arp (ArpField::On, 1.0f).arp (ArpField::Mode, (float) ArpMode::UpDown).arp (ArpField::Octaves, 2.0f).arp (ArpField::Gate, 0.5f)
                 .route (S::MpePressure, D::FilterCutoff, 0.45f).route (S::MpeSlide, D::FilterResonance, 0.4f)
-                .macros (D::ArpGate, 0.4f, "GATE").delay ("1/8.", 0.35f, 0.25f).reverb (0.5f, 0.2f).amp (0.55f, 0.6f); } });
+                .macros (D::ArpGate, 0.4f, "GATE").delay ("1/8.", 0.35f, 0.25f).reverb (0.5f, 0.2f).amp (0.80f, 0.6f); } });
 
         p.push_back ({ "Sequenced Expression", "MPE Performance", "The step sequencer plays pressure, slide and pitch glides per step (runs with the host).",
             [] (PresetState& s) { Build (s)

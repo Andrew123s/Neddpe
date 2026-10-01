@@ -1,5 +1,6 @@
 #include "ParameterDefs.h"
 #include "DSP/Wavetable.h"
+#include "Synth/OscillatorAssets.h"
 #include "Synth/Tempo.h"
 
 namespace nedd
@@ -215,6 +216,7 @@ namespace
             sound (b.real (i (OscField::GrainSpray), p + "gspray", n + "Grain Position Spray", G, 0.0f, 1.0f, 0.1f, fmt::percent), true);
             sound (b.real (i (OscField::GrainPitchSpray), p + "gpitch", n + "Grain Pitch Spray", G, 0.0f, 12.0f, 0.0f,
                            [] (float v) { return juce::String (v, 1) + " st"; }), true);
+            sound (b.choice (i (OscField::SampleSource), p + "source", n + "Built-in Source", G, assets::getBuiltInSampleNames(), 0), true);
         }
     }
 

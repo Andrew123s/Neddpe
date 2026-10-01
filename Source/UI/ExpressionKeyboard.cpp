@@ -85,7 +85,7 @@ void ExpressionKeyboard::editorTick()
 
 void ExpressionKeyboard::paint (juce::Graphics& g)
 {
-    g.fillAll (colours::background);
+    g.fillAll (colours::panel);
     const int highest = lowestNote + numWhiteKeys / 7 * 12 + 12;
 
     auto drawKey = [&] (int n)
@@ -96,23 +96,26 @@ void ExpressionKeyboard::paint (juce::Graphics& g)
         for (const auto& t : touches)
             pressed = pressed || (t.active && t.note == n);
 
-        g.setColour (black ? juce::Colour (0xff1b1e25) : juce::Colour (0xffd9dce3));
-        g.fillRoundedRectangle (r.withTrimmedTop (-4.0f), 3.0f);
+        if (black)
+            g.setGradientFill (juce::ColourGradient (colours::keyBlack.brighter (0.15f), r.getX(), r.getY(), colours::keyBlack.darker (0.08f), r.getX(), r.getBottom(), false));
+        else
+            g.setGradientFill (juce::ColourGradient (colours::keyWhite, r.getX(), r.getY(), colours::control, r.getX(), r.getBottom(), false));
+        g.fillRoundedRectangle (r.withTrimmedTop (-4.0f), 4.0f);
 
         const float level = sounding[(size_t) n];
         if (level > 0.001f || pressed)
         {
             const auto c = pressed ? colours::accent : soundingColour[(size_t) n];
-            g.setColour (c.withAlpha (black ? 0.5f + 0.4f * level : 0.35f + 0.5f * level));
-            g.fillRoundedRectangle (r.withTrimmedTop (r.getHeight() * 0.35f), 3.0f);
+            g.setColour (c.withAlpha (black ? 0.55f + 0.4f * level : 0.35f + 0.5f * level));
+            g.fillRoundedRectangle (r.withTrimmedTop (r.getHeight() * 0.35f), 4.0f);
         }
 
-        g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.drawRoundedRectangle (r.withTrimmedTop (-4.0f), 3.0f, 1.0f);
+        g.setColour (black ? colours::keyBlack.darker (0.15f) : colours::outlineStrong);
+        g.drawRoundedRectangle (r.withTrimmedTop (-4.0f), 4.0f, 1.0f);
 
         if (! black && n % 12 == 0)
         {
-            g.setColour (juce::Colour (0xff6b7282));
+            g.setColour (colours::textDim);
             g.setFont (font (9.5f));
             g.drawText (noteName (n), r.withTop (r.getBottom() - 13.0f), juce::Justification::centred);
         }
